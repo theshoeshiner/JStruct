@@ -25,7 +25,6 @@ import org.apache.commons.lang3.ArrayUtils;
  * 
  * The unsigned methods allow you to pass in the full value
  * 
- * @author daniel.watson
  *
  */
 public class Struct {
