@@ -15,6 +15,8 @@ To use this, add the maven dependency:
 	</dependency>
 ```
 
+And the code can be used as follows...
+
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
 List<Object> input = Arrays.asList(
