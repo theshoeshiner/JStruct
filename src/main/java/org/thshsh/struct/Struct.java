@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +31,13 @@ import org.apache.commons.lang3.ArrayUtils;
 public class Struct {
 
 
-	private static final Map<Character, ByteOrder> BYTE_ORDER_MAP = Map.ofEntries(
-	        Map.entry('>', ByteOrder.BIG_ENDIAN),
-	        Map.entry('<', ByteOrder.LITTLE_ENDIAN),
-	        Map.entry('!', ByteOrder.BIG_ENDIAN),
-	        Map.entry('@', ByteOrder.nativeOrder())
-	       );
+	private static final Map<Character, ByteOrder> BYTE_ORDER_MAP = new HashMap<Character, ByteOrder>();
+	static {
+		BYTE_ORDER_MAP.put('>', ByteOrder.BIG_ENDIAN);
+		BYTE_ORDER_MAP.put('<', ByteOrder.LITTLE_ENDIAN);
+		BYTE_ORDER_MAP.put('!', ByteOrder.BIG_ENDIAN);
+		BYTE_ORDER_MAP.put('@', ByteOrder.nativeOrder());
+	}
 
 	protected List<Token> tokens = new ArrayList<Struct.Token>();
 	protected ByteOrder byteOrder;
