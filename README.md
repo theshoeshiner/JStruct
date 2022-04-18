@@ -5,7 +5,7 @@ The python struct library's port to java for reading and writing binary data as 
 The Struct class contains static methods for constructing a reuseable Struct object from a format string
 
 ## USAGE:
-To use this, either add the maven dependency:
+To use this, add the maven dependency:
 
 ```
 	<dependency>
