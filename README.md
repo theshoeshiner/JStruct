@@ -1,48 +1,53 @@
 # JStruct
-The python struct library's port to java for reading and writing binary data as in python
+The python struct library's port to java for reading and writing binary data as in python. Based off the code found here: https://github.com/ronniebasak/JStruct with non backwards compatible changes to support strong typing, strings, and byte arrays.
 
 ## Classes
-The file Struct.java defines a single class named struct. Due to the dependability on hardware
-and the information of system's byte order is needed. So, it have to be initialized first like:
-  Struct struct = new Struct();
-
-this will correctly initialize the library and set everything up for it's use
+The Struct class contains static methods for constructing a reuseable Struct object from a format string
 
 ## USAGE:
-To use this, either add a jar dependancy or use the class as is in your file. For possible namespace conflicts
-compiling to a jar dependancy is preferred. In that case, kindly use com.quora.weirduniverse.JStruct as package name.
-( http://weirduniverse.quora.com happens to be my quora blog -- I love writing on quora )
+To use this, either add the maven dependency:
 
-Due to the typed nature of Java (and trust me, the lack-of-unsignedness hurts the most)
-we always deal in longs, and as such unsigned long long (128bit) integers will never be a part of this lib
-Though I am thinking of a fork of this which communicates in BigIntegers, since, 128bit ints are rarely used (well, by me at least)
-I am working on this over longs, since they process much faster ( I know, I know, don't tell the Knuth's line to me over and over again, but this shit
-is pretty low level, so, optimizations does matter *java is not python* )
+```
+	<dependency>
+		<groupId>org.thshsh</groupId>
+		<artifactId>struct</artifactId>
+		<version>1.0.0</version>
+	</dependency>
+```
 
-First, Initialize, by Struct struct = new Struct();
-then, the following functions are available
-
-__pack(String fmt, long val)__ : Returns a byte[] (bytearray) of the single value packed accordingly, do note though, currently, no error is thrown if the value is out of range, because, the value is always truncated by a `0xffff...` as needed. Outer bytes are simply ignored. This behavior may change, depends on the support though
-
-__pack(String fmt, long[] vals)__ : Returns a flattenned byte[] (bytearray) of the data. i.e. if it is used like struct.pack("HI", {26952, 1635148106}).toString("UTF-8") will result into "HiJava"
-
-__unpack(String fmt, byte[] vals)__ : Returns a long[] that will hold the appropriate number of values parsed from the vals. vals is a flattenned bytearray,
-therefore the length of vals must be equal to the expected length, else it will throw an Exception (I don't know what would be the appropriate Exception, I get confused, an edit here might help :) ) Do note that, it will always be an array even if you are parsing a single value, accessing the 0th index will help.
+This library makes all attempts to correctly type the arguments, but some arguments must be up-cast to allow them to correctly represent unsigned decimal values
 
 ## Accepted specifiers:
   The first char can be a endianness indicator, the following are available
-  * @ : Default endianness (since in java, native and standard are meaningless, so used it as default endianness and no =)
-  * < : Little Endian
-  * > : Big Endian
-  * ! : Network byte order, same as >
+  * ``@`` : Default endianness
+  * ``<`` : Little Endian
+  * ``>`` : Big Endian
+  * ``!`` : Network byte order, same as >
 
-  Apart from them the following code specifiers are supported in this version:
-  * h : 2's complement Signed Short (2 bytes) 
-  * H : Unsigned Short (2 bytes)
-  * i : 2's complemen  Signed int (4 bytes)
-  * I : Unsigned int (4 bytes)
+  The following token specifiers are supported:
+  * ``h`` : Signed Short (2 bytes) - java.lang.Short
+  * ``H`` : Unsigned Short (2 bytes) - java.lang.Integer
+  * ``i`` : Signed Integer (4 bytes) - java.lang.Integer
+  * ``l`` : Signed Integer (4 bytes) - java.lang.Integer (same as ''i'')
+  * ``I`` : Unsigned Integer (4 bytes) - java.lang.Long
+  * ``q`` : Signed Long (8 bytes) - java.lang.Long
+  * ``Q`` : Unsigned Long (8 bytes) - java.lang.Long
+  * ``d`` : Floating Point Double (8 bytes) - java.lang.Double
+  * ``s`` : Byte Array - java.lang.Byte[]
+  * ``S`` : String - java.lang.String
+  
+Unlike python, a count can be specified for *any* token type. For the array and String types ('s' and 'S') the count specified is the number of items in the array or the number of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This is for conciseness only. e.g. the following two patterns are functionally the same:
 
-I will update if people are interested, else, this much suffices my personal interest, updates will be done if I ever need more features.
+```
+4i4q4d
+iiiiqqqqdddd
 
-Finally, Python rocks, I am learning Java for filling up my resume only. And probably for the mantra, "learning never hurts"
-(I know, there is no such mantra, and learning always hurt, but you see, you gotta look cool if you have to impress bosses (or teachers))
+```
+
+## Flaws
+
+Because java cannot represent an unsigned 8 byte integer with a primitive, the unsigned long type ('Q') returns a signed Long. It should be noted that *the underlying bits are correct* , so the 2's compliment decimal value will not match the unsigned decimal value. If you need the decimcal value you can use the Java 8 function Long.toUnsignedString(n) to convert and store in a BigInteger:
+
+```
+BigInteger bi = new BigInteger(Long.toUnsignedString(n));
+```

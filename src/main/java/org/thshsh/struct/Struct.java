@@ -1,401 +1,532 @@
-/**
- *
- * JStruct:  The python struct library's port to java for reading and writing binary data as in python —  Copyright (C) 2016 Sohan Basak
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 3 of the license
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
- * See the GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License along with this program. 
- * if not, see http://www.gnu.org/licenses/.
- *
- */
+package org.thshsh.struct;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.lang.*;
+import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import static java.lang.Math.*;
+import org.apache.commons.lang3.ArrayUtils;
 
+/**
+ * 
+ * This class is based off the original port of Pythons struct functions found here:
+ * https://github.com/ronniebasak/JStruct
+ * 
+ * But with significant updates to support strongly typed variables, arrays, and strings
+ * 
+ * The signed pack methods technically work because they create the correct
+ * packed bytes. The downside is that value passed in must be the 2s compliment
+ * version
+ * 
+ * The unsigned methods allow you to pass in the full value
+ * 
+ * @author daniel.watson
+ *
+ */
 public class Struct {
-    private short BigEndian = 0;
-    private short LittleEndian = 1;
-    private short byteOrder;
-    private short nativeByteOrder;
 
-    Struct(){
-        ByteOrder x = ByteOrder.nativeOrder();
-        if( x == ByteOrder.LITTLE_ENDIAN)
-            nativeByteOrder = LittleEndian;
-        else
-            nativeByteOrder = BigEndian;
 
-        byteOrder = nativeByteOrder;
-    }
-
-    private byte[] reverseBytes(byte[] b){
-        byte tmp;
-        for(int i=0; i<(b.length/2); i++){
-            tmp = b[i];
-            b[i]=b[b.length-i-1];
-            b[b.length-i-1]=tmp;
-        }
-
-        return b;
-    }
-
-
-    private byte[] packRaw_16b(short val){
-        byte[] bx = new byte[2];
-
-        if (val>=0){
-            bx[0]= (byte) (val & 0xff);
-            bx[1]= (byte) ((val>>8) &0xff);
-
-        } else {
-            int v2 = abs(val);
-            v2 = (v2 ^ 0x7fff)+1; // invert bits and add 1
-            v2 = v2 | (1<<15);
-            bx[0] = (byte) (v2 & 0xff);
-            bx[1] = (byte) ((v2>>8) & 0xff);
-
-        }
-
-        if(byteOrder==BigEndian){
-            bx = reverseBytes(bx);
-        }
-
-        return bx;
-    }
-
-    private byte[] packRaw_u16b(int val){
-        byte[] bx = new byte[2];
-
-        val = val & 0xffff; //truncate
-
-        if (val>=0){
-            bx[0]= (byte) (val & 0xff);
-            bx[1]= (byte) ((val>>8) &0xff);
-
-        }
-
-        if(byteOrder==BigEndian){
-            bx = reverseBytes(bx);
-        }
-
-        return bx;
-    }
-
-    private byte[] packRaw_32b(int val){
-        byte[] bx = new byte[4];
-
-        if (val>=0){
-            bx[0]= (byte) (val & 0xff);
-            bx[1]= (byte) ((val>>8) &0xff);
-            bx[2]= (byte) ((val>>16) &0xff);
-            bx[3]= (byte) ((val>>24) &0xff);
-
-        } else {
-            long v2 = abs(val);
-            v2 = (v2 ^ 0x7fffffff)+1; // invert bits and add 1
-            v2 = v2 | (1<<31); // add the 32nd bit as negative bit
-            bx[0] = (byte) (v2 & 0xff);
-            bx[1] = (byte) ((v2>>8) & 0xff);
-            bx[2]= (byte) ((v2>>16) &0xff);
-            bx[3]= (byte) ((v2>>24) &0xff);
-
-        }
-
-        if(byteOrder==BigEndian){
-            bx = reverseBytes(bx);
-        }
-
-        return bx;
-    }
-
-    private byte[] packRaw_u32b(long val){
-        byte[] bx = new byte[4];
-
-        val = val & 0xffffffff;
-
-        if (val>=0){
-            bx[0]= (byte) (val & 0xff);
-            bx[1]= (byte) ((val>>8) &0xff);
-            bx[2]= (byte) ((val>>16) &0xff);
-            bx[3]= (byte) ((val>>24) &0xff);
-
-        }
-
-        if(byteOrder==BigEndian){
-            bx = reverseBytes(bx);
-        }
-        return bx;
-    }
-
-
-
-    public byte[] pack_single_data(char fmt, long val){
-        byte[] bx;
-        switch (fmt){
-            case 'h':
-                short value = (short) (val & 0xffff);
-                bx = packRaw_16b(value);
-                break;
-
-            case 'H':
-                bx = packRaw_u16b((int) val);
-                break;
-
-
-            case 'i':
-                int ival = (int) (val & 0xffffffff);
-                bx = packRaw_32b(ival);
-                break;
-
-            case 'I':
-                bx = packRaw_u32b(val);
-                break;
-
-            default:
-                //do nothing
-                System.out.println("Invalid format specifier");
-                bx = null;
-                break;
-
-        }
-
-        return bx;
-    }
-
-
-    public byte[] pack(String fmt, long val) throws Exception{
-        if(fmt.length()>2){
-            throw new Exception("Single values may not have multiple format specifiers");
-        }
-
-        byte[] bx = new byte[1];
-        for (int i=0; i<fmt.length(); i++){
-            char c = fmt.charAt(i);
-            if ((i == 0) && ((c == '>') || (c == '<') || (c == '@') || (c == '!'))){
-                if (c == '>')
-                    byteOrder = BigEndian;
-                else if (c == '<')
-                    byteOrder = LittleEndian;
-                else if(c == '!')
-                    byteOrder = BigEndian;
-                else if (c == '@')
-                    byteOrder = nativeByteOrder;
-            }
-            else if((c != '>') && (c != '<') && (c != '@') && (c != '!')) {
-
-                bx = pack_single_data(c, val);
-
-                if (bx == null)
-                    throw new Exception("Invalid character specifier");
-
-
-            }
-
-        }
-        return bx;
-    }
-
-    public byte[] pack(String fmt, long[] vals) throws Exception{
-        char c0 = fmt.charAt(0);
-        int len;
-        if((c0 == '@') || (c0 == '>') || (c0 == '<') || (c0 == '!')) {
-            len = fmt.length() - 1;
-        } else {
-            len = fmt.length();
-        }
-
-        if(len!=vals.length)
-            throw new Exception("format length and values aren't equal");
-
-        len = lenEst(fmt);
-
-        byte[] bxx = new byte[0];
-        byte[] bx;
-        byte[] temp;
-
-        for (int i=0; i<fmt.length(); i++){
-            char c = fmt.charAt(i);
-            if ((i == 0) && ((c == '>') || (c == '<') || (c == '@') || (c == '!'))){
-                if (c == '>')
-                    byteOrder = BigEndian;
-                else if (c == '<')
-                    byteOrder = LittleEndian;
-                else if(c == '!')
-                    byteOrder = BigEndian;
-                else if (c == '@')
-                    byteOrder = nativeByteOrder;
-            }
-            else if((c != '>') && (c != '<') && (c != '@') && (c != '!')) {
-                if((c0 == '@') || (c0 == '>') || (c0 == '<') || (c0 == '!')) {
-                    bx = pack(Character.toString(c), vals[i-1]);
-                }
-                else {
-                    bx = pack(Character.toString(c), vals[i]);
-                }
-                temp = new byte[bxx.length + bx.length];
-                System.arraycopy(bxx, 0, temp, 0,bxx.length);
-                System.arraycopy(bx, 0, temp, bxx.length, bx.length);
-
-                bxx = Arrays.copyOf(temp, temp.length);
-            }
-        }
-
-        return bxx;
-    }
-
-
-    private long unpackRaw_16b(byte[] val){
-        if(byteOrder==LittleEndian)
-            reverseBytes(val);
-
-        long x;
-        x = (val[0] << 8) | (val[1] & 0xff);
-        if ((x>>>15&1)==1){
-            x = ((x^0x7fff)&0x7fff)+1; //2's complement 16 bit
-            x *= -1;
-        }
-        return x;
-    }
-
-    private long unpackRaw_u16b(byte[] val){
-        if(byteOrder==LittleEndian)
-            reverseBytes(val);
-
-        long x;
-        x = ((val[0] & 0xff) << 8) | (val[1] & 0xff);
-        return x;
-    }
-
-    private long unpackRaw_32b(byte[] val){
-        if(byteOrder==LittleEndian)
-            reverseBytes(val);
-
-        long x;
-        x = (val[0]<<24) | (val[1]<<16) | (val[2]<<8) | (val[3]);
-        if ((x>>>31&1)==1){
-            x = ((x^0x7fffffff)&0x7fffffff)+1; //2's complement 32 bit
-            x *= -1;
-        }
-        return x;
-    }
-
-    private long unpackRaw_u32b(byte[] val){
-        if(byteOrder==LittleEndian)
-            reverseBytes(val);
-
-        long x;
-        x = ( ((long)(val[0] & 0xff))<<24) | (((long) (val[1] & 0xff))<<16) | ( ((long)(val[2]&0xff))<<8) | ((long)(val[3] & 0xff));
-        return x;
-    }
-    public long unpack_single_data(char fmt, byte[] val) throws Exception{
-        long var = 0;
-        switch (fmt){
-            case 'h':
-                if(val.length!=2)
-                    throw new Exception("Byte length mismatch");
-                var = unpackRaw_16b(val);
-                break;
-
-            case 'H':
-                if (val.length!=2)
-                    throw new Exception("Byte length mismatch");
-
-                var = unpackRaw_u16b(val);
-                break;
-
-            case 'i':
-                if (val.length!=4)
-                    throw new Exception("Byte length mismatch");
-
-                var = unpackRaw_32b( val);
-                break;
-
-            case 'I':
-                if (val.length!=4)
-                    throw new Exception("Byte length mismatch");
-                var = unpackRaw_u32b(val);
-                break;
-
-            default:
-                // do nothing;
-                break;
-        }
-
-        return var;
-    }
-
-
-
-    private int lenEst(String fmt){
-        int counter = 0;
-        char x = '\0';
-        for(int i =0; i<fmt.length(); i++) {
-            x = fmt.charAt(i);
-            if (x=='i' || x=='I')
-                counter+=4;
-            else if (x=='h' || x=='H')
-                counter+=2;
-        }
-        return counter;
-    }
-
-    public long[] unpack(String fmt, byte[] vals) throws Exception{
-        int len;
-        len = lenEst(fmt);
-
-        if(len!=vals.length)
-            throw new Exception("format length and values aren't equal");
-
-        char c0 = fmt.charAt(0);
-
-        long[] bxx;
-        if (c0=='@' || c0 == '<' || c0 == '>' || c0 == '!') {
-            bxx = new long[fmt.length() - 1];
-        }
-        else{
-            bxx = new long[fmt.length()];
-        }
-        char c;
-        byte[] bShort = new byte[2];
-        byte[] bLong = new byte[4];
-        ByteArrayInputStream bs = new ByteArrayInputStream(vals);
-
-        int p = 0;
-        for (int i=0; i<fmt.length(); i++){
-            c = fmt.charAt(i);
-            if ((i == 0) && ((c == '>') || (c == '<') || (c == '@') || (c == '!'))){
-                if (c == '>')
-                    byteOrder = BigEndian;
-                else if (c == '<')
-                    byteOrder = LittleEndian;
-                else if(c == '!')
-                    byteOrder = BigEndian;
-                else
-                    byteOrder = nativeByteOrder;
-            }
-            else {
-                if ((c != '>') && (c != '<') && (c != '@') && (c != '!')) {
-                    if (c == 'h' || c == 'H') {
-                        int read = bs.read(bShort);
-                        bxx[p] = unpack_single_data(c, bShort);
-                    }
-                    else if(c == 'i' || c =='I'){
-                        int read = bs.read(bLong);
-                        bxx[p] = unpack_single_data(c, bLong);
-                    }
-                    p++;
-                }
-            }
-
-        }
-        return bxx;
-    }
-
+	private static final Map<Character, ByteOrder> BYTE_ORDER_MAP = Map.ofEntries(
+	        Map.entry('>', ByteOrder.BIG_ENDIAN),
+	        Map.entry('<', ByteOrder.LITTLE_ENDIAN),
+	        Map.entry('!', ByteOrder.BIG_ENDIAN),
+	        Map.entry('@', ByteOrder.nativeOrder())
+	       );
+
+	protected List<Token> tokens = new ArrayList<Struct.Token>();
+	protected ByteOrder byteOrder;
+	protected Charset charset;
+	
+
+	public Struct(ByteOrder byteOrder, Charset charset) {
+		this.byteOrder = byteOrder != null ? byteOrder : ByteOrder.nativeOrder();
+		this.charset = charset != null ? charset : Charset.defaultCharset();
+	}
+	
+
+	public void appendToken(Token t) {
+		tokens.add(t);
+	}
+
+	public void appendToken(TokenType type, int count) {
+		appendToken(new Token(type, count));
+	}
+
+	public int byteCount() {
+		int size = 0;
+		for (Token t : tokens)
+			size += t.byteCount();
+		return size;
+	}
+	
+	public int tokenCount() {
+		int count = 0;
+		for (Token t : tokens)
+			count += t.tokenCount();
+		return count;
+	}
+	
+	public static Struct create(String fmt) {
+		return create(fmt, null);
+	}
+
+	public static Struct create(String fmt, Charset cs) {
+		Struct format = new Struct(null, cs);
+		Character x = null;
+		StringBuilder buf = new StringBuilder();
+		for (int i = 0; i < fmt.length(); i++) {
+			x = fmt.charAt(i);
+			if (BYTE_ORDER_MAP.keySet().contains(x)) {
+				format.byteOrder = BYTE_ORDER_MAP.get(x);
+			} else if (Character.isDigit(x)) {
+				buf.append(x);
+			} else {
+				TokenType type = TokenType.valueOf(x.toString());
+				int multiplier = 1;
+				if (buf.length() > 0) {
+					multiplier = Integer.valueOf(buf.toString());
+					if(multiplier<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
+					buf.setLength(0);
+				}
+				format.appendToken(type, multiplier);
+			}
+		}
+
+		return format;
+	}
+
+	protected static byte[] packRaw_16b(short val, ByteOrder byteOrder) {
+		
+		
+		byte[] bx = new byte[2];
+
+		bx[0] = (byte) (val & 0xff);
+		bx[1] = (byte) ((val >>> 8) & 0xff);
+
+		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
+
+		return bx;
+	}
+
+	protected static byte[] packRaw_u16b(int val, ByteOrder byteOrder) {
+		byte[] bx = new byte[2];
+
+		bx[0] = (byte) (val & 0xff);
+		bx[1] = (byte) ((val >>> 8) & 0xff);
+
+		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
+
+		return bx;
+	}
+
+	protected static byte[] packRaw_32b(int val, ByteOrder byteOrder) {
+		byte[] bx = new byte[4];
+
+		bx[0] = (byte) (val & 0xff);
+		bx[1] = (byte) ((val >>> 8) & 0xff);
+		bx[2] = (byte) ((val >>> 16) & 0xff);
+		bx[3] = (byte) ((val >>> 24) & 0xff);
+
+		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
+		
+		return bx;
+	}
+
+	protected static byte[] packRaw_64b(long val, ByteOrder byteOrder) {
+
+		byte[] bx = new byte[8];
+
+		bx[0] = (byte) (val & 0xff);
+		bx[1] = (byte) ((val >>> 8) & 0xff);
+		bx[2] = (byte) ((val >>> 16) & 0xff);
+		bx[3] = (byte) ((val >>> 24) & 0xff);
+		bx[4] = (byte) ((val >>> 32) & 0xff);
+		bx[5] = (byte) ((val >>> 40) & 0xff);
+		bx[6] = (byte) ((val >>> 48) & 0xff);
+		bx[7] = (byte) ((val >>> 56) & 0xff);
+
+		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
+		
+		return bx;
+	}
+
+	protected static byte[] packFloat_64b(double val, ByteOrder byteOrder) {
+
+		long bits = Double.doubleToLongBits(val);
+		byte[] bytes = packRaw_64b(bits, byteOrder);
+		return bytes;
+
+	}
+
+	protected static byte[] packRaw_u32b(long val, ByteOrder byteOrder) {
+		byte[] bx = new byte[4];
+
+		val = val & 0xffffffff;
+
+		if (val >= 0) {
+			bx[0] = (byte) (val & 0xff);
+			bx[1] = (byte) ((val >> 8) & 0xff);
+			bx[2] = (byte) ((val >> 16) & 0xff);
+			bx[3] = (byte) ((val >> 24) & 0xff);
+
+		}
+
+		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
+		
+		return bx;
+	}
+
+	
+	public byte[] pack(List<Object> vals) {
+
+		Struct format = this;
+		int len = format.tokenCount();
+		if (len != vals.size())throw new IllegalArgumentException("format tokens: " + len + " does not equal value tokens: " + vals.size());
+
+		byte[] result = new byte[format.byteCount()];
+
+		int position = 0;
+		
+		Iterator<Token> tokens = format.tokens.iterator();
+		Iterator<Object> values = vals.iterator();
+		
+		while(tokens.hasNext()) {
+			
+			Token token = tokens.next();
+			
+			for (int i = 0; i < token.tokenCount(); i++) {
+				Object val = values.next();
+				
+				byte[] bx;
+				switch (token.type) {
+					case h:
+						bx = packRaw_16b((short) val, format.byteOrder);
+						break;
+					case H:
+						bx = packRaw_u16b((int) val, format.byteOrder);
+						break;
+					case i:
+					case l:
+						bx = packRaw_32b(((int) val & 0xffffffff), format.byteOrder);
+						break;
+					case I:
+						bx = packRaw_u32b((long) val, format.byteOrder);
+						break;
+					case q:
+					case Q:
+						bx = packRaw_64b(((long) val & 0xffffffffffffffffl), format.byteOrder);
+						break;
+					case d:
+						bx = packFloat_64b((double) val, format.byteOrder);
+						break;
+					case s:
+						bx = (byte[]) val;
+						break;
+					case S:
+						bx = ((String)val).getBytes(format.charset);
+						break;
+					default:
+						throw new IllegalArgumentException("Unhandled case: " + token.type);
+
+				}
+				
+				System.arraycopy(bx, 0, result, position, bx.length);
+				position += bx.length;
+				
+				if(token.type.array) break;
+			}
+			
+		}
+		
+
+
+		return result;
+
+	}
+
+
+	protected static short unpackRaw_16b(byte[] val, ByteOrder byteOrder) {
+
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+
+		int x = ((int) (val[0] & 0xff) << 8) | ((int) (val[1] & 0xff));
+
+		return (short) x;
+	}
+
+	protected static int unpackRaw_u16b(byte[] val, ByteOrder byteOrder) {
+
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+
+		int x = ((val[0] & 0xff) << 8) | (val[1] & 0xff);
+		return x;
+	}
+
+	protected static int unpackRaw_32b(byte[] val, ByteOrder byteOrder) {
+		
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+		
+		int x = ((int) (val[0] & 0xff) << 24) | ((int) (val[1] & 0xff) << 16) | ((int) (val[2] & 0xff) << 8)
+				| ((int) (val[3] & 0xff));
+
+		return x;
+	}
+
+	protected static long unpackRaw_u32b(byte[] val, ByteOrder byteOrder) {
+		
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+
+		long x = (((long) (val[0] & 0xff)) << 24) | (((long) (val[1] & 0xff)) << 16) | (((long) (val[2] & 0xff)) << 8)
+				| ((long) (val[3] & 0xff));
+		return x;
+	}
+
+	protected static long unpackRaw_64b(byte[] val, ByteOrder byteOrder) {
+		
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+
+		long x = (((long) (val[0] & 0xff)) << 56) | (((long) (val[1] & 0xff)) << 48) | (((long) (val[2] & 0xff)) << 40)
+				| (((long) (val[3] & 0xff)) << 32) | (((long) (val[4] & 0xff)) << 24) | (((long) (val[5] & 0xff)) << 16)
+				| (((long) (val[6] & 0xff)) << 8) | ((long) (val[7] & 0xff));
+		return x;
+	}
+
+	protected static double unpackFloat_64b(byte[] val, ByteOrder byteOrder) {
+
+		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
+
+		long x = unpackRaw_64b(val, byteOrder);
+		double d = Double.longBitsToDouble(x);
+
+		return d;
+	}
+
+	public List<Object> unpack(byte[] vals) {
+
+		Struct format = this;
+		
+		int len = format.byteCount();
+
+		if (len != vals.length) throw new IllegalArgumentException("format length: " + len + " does not equal value length: " + vals.length);
+
+		List<Object> tokens = new ArrayList<Object>();
+
+		byte[] shortBytes = new byte[2];
+		byte[] intBytes = new byte[4];
+		byte[] longBytes = new byte[8];
+		byte[] dynamicBytes;
+
+		try {
+			ByteArrayInputStream bs = new ByteArrayInputStream(vals);
+
+			for (Token token : format.tokens) {
+
+				count: for (int i = 0; i < token.tokenCount(); i++) {
+					switch (token.type) {
+					case H:
+						bs.read(shortBytes);
+						tokens.add(unpackRaw_u16b(shortBytes, format.byteOrder));
+						break;
+					case h:
+						bs.read(shortBytes);
+						tokens.add(unpackRaw_16b(shortBytes, format.byteOrder));
+						break;
+					case I:
+						bs.read(intBytes);
+						tokens.add(unpackRaw_u32b(intBytes, format.byteOrder));
+						break;
+					case i:
+						bs.read(intBytes);
+						tokens.add((int) unpackRaw_32b(intBytes, format.byteOrder));
+						break;
+					case l:
+						bs.read(intBytes);
+						tokens.add(unpackRaw_32b(intBytes, format.byteOrder));
+						break;
+					case q:
+						// TODO no such thing as an unsigned 64 bit in java so we process as signed
+					case Q:
+						bs.read(longBytes);
+						tokens.add(unpackRaw_64b(longBytes, format.byteOrder));
+						break;
+					case d:
+						bs.read(longBytes);
+						tokens.add(unpackFloat_64b(longBytes, format.byteOrder));
+						break;
+					case s:
+						dynamicBytes = new byte[token.count];
+						bs.read(dynamicBytes);
+						tokens.add(dynamicBytes);
+						break count;
+					case S:
+						dynamicBytes = new byte[token.count];
+						bs.read(dynamicBytes);
+						String string = new String(dynamicBytes, format.charset);
+						tokens.add(string);
+						break count;
+					default:
+						throw new IllegalArgumentException("unhandled case: " + token.type);
+					}
+				}
+
+			}
+
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+
+		return tokens;
+
+	}
+
+	/*	public static Format createFormat(String fmt) {
+			return createFormat(fmt, null);
+		}
+	
+		public static Format createFormat(String fmt, Charset cs) {
+			Format format = new Format(null, cs);
+			Character x = null;
+			StringBuilder buf = new StringBuilder();
+			for (int i = 0; i < fmt.length(); i++) {
+				x = fmt.charAt(i);
+				if (BYTE_ORDER_MAP.keySet().contains(x)) {
+					format.byteOrder = BYTE_ORDER_MAP.get(x);
+				} else if (Character.isDigit(x)) {
+					buf.append(x);
+				} else {
+					TokenType type = TokenType.valueOf(x.toString());
+					int multiplier = 1;
+					if (buf.length() > 0) {
+						multiplier = Integer.valueOf(buf.toString());
+						if(multiplier<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
+						buf.setLength(0);
+					}
+					format.appendToken(type, multiplier);
+				}
+			}
+	
+			return format;
+		}
+	*/
+	/*public static class Format {
+		protected List<Token> tokens = new ArrayList<Struct.Token>();
+		protected ByteOrder byteOrder;
+		protected Charset charset;
+	
+		public Format() {
+		}
+	
+		public Format(ByteOrder byteOrder, Charset charset) {
+			super();
+			this.byteOrder = byteOrder != null ? byteOrder : ByteOrder.nativeOrder();
+			this.charset = charset != null ? charset : Charset.defaultCharset();
+		}
+	
+		public void appendToken(Token t) {
+			tokens.add(t);
+		}
+	
+		public void appendToken(TokenType type, int count) {
+			appendToken(new Token(type, count));
+		}
+	
+		public int byteCount() {
+			int size = 0;
+			for (Token t : tokens)
+				size += t.byteCount();
+			return size;
+		}
+		
+		public int tokenCount() {
+			int count = 0;
+			for (Token t : tokens)
+				count += t.tokenCount();
+			return count;
+		}
+	
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("[byteOrder=");
+			builder.append(byteOrder);
+			builder.append(", tokens=");
+			builder.append(tokens);
+			builder.append("]");
+			return builder.toString();
+		}
+	
+	}*/
+
+	public static class Token {
+		protected TokenType type;
+		private int count;
+		protected int byteCount;
+
+		public Token(TokenType type, int count) {
+			super();
+			this.type = type;
+			this.count = count;
+			if (count == 0)
+				throw new IllegalArgumentException("Count cannot be zero");
+			byteCount = count * type.size;
+		}
+
+		public int tokenCount() {
+			return type.array?1:count;
+		}
+		
+		public int byteCount() {
+			return byteCount;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("[type=");
+			builder.append(type);
+			builder.append(", count=");
+			builder.append(count);
+			builder.append(", byteCount=");
+			builder.append(byteCount);
+			builder.append("]");
+			return builder.toString();
+		}
+
+	}
+
+	/**
+	 * i and l are the same q and Q are treated the same because we cannot represent
+	 * an unsigned long
+	 * 
+	 * @author daniel.watson
+	 *
+	 */
+	public enum TokenType {
+		h(2,false), // short
+		H(2,false), // short unsigned
+		i(4,false), // integer
+		l(4,false), // integer
+		I(4,false), // integer unsigned
+		q(8,false), // long
+		Q(8,false), // long unsigned
+		d(8,false), // double
+		s(1,true), // byte array
+		S(1,true) // string
+		;
+
+		//size in bytes of this token
+		int size;
+		//array types combine the entire count into one array
+		boolean array;
+
+		private TokenType(int size,boolean ar) {
+			this.size = size;
+			this.array = ar;
+		}
+	}
+	
 }
