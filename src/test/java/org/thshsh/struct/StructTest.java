@@ -49,6 +49,21 @@ public class StructTest {
 		testInput(f,input);
 	}
 	
+	@Test
+	public void testCombined() {
+		Struct struct = Struct.create(">2h2i2q2d4s5S");
+		List<Object> input = Arrays.asList(
+				Short.MAX_VALUE,Short.MIN_VALUE,
+				Integer.MAX_VALUE,Integer.MIN_VALUE,
+				Long.MAX_VALUE,Long.MIN_VALUE,
+				Double.MAX_VALUE,Double.MIN_VALUE,
+				new byte[] {4,6,2,12},
+				"ABCDE"
+				);
+		byte[] output = struct.pack(input);
+		LOGGER.info("{}",new Object[] {output});
+	}
+	
 	@Test()
 	public void testCount() {
 		Struct f = Struct.create(">2d2q2h2i3s4S");

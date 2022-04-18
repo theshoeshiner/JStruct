@@ -15,7 +15,33 @@ To use this, either add the maven dependency:
 	</dependency>
 ```
 
-This library makes all attempts to correctly type the arguments, but some arguments must be up-cast to allow them to correctly represent unsigned decimal values
+```
+Struct struct = Struct.create(">2h2i2q2d4s5S");
+List<Object> input = Arrays.asList(
+		Short.MAX_VALUE,Short.MIN_VALUE,
+		Integer.MAX_VALUE,Integer.MIN_VALUE,
+		Long.MAX_VALUE,Long.MIN_VALUE,
+		Double.MAX_VALUE,Double.MIN_VALUE,
+		new byte[] {4,6,2,12},
+		"ABCDE"
+		);
+byte[] output = struct.pack(input);
+```
+
+The output array of the above code is:
+
+**in signed decicmal values**
+
+``[127, -1, -128, 0, 127, -1, -1, -1, -128, 0, 0, 0, 127, -1, -1, -1, -1, -1, -1, -1, -128, 0, 0, 0, 0, 0, 0, 0, 127, -17, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 4, 6, 2, 12, 65, 66, 67, 68, 69]``
+
+**in Hex string**
+
+``7fff80007fffffff800000007fffffffffffffff80000000000000007fefffffffffffff00000000000000010406020c4142434445``
+
+This library makes all attempts to correctly type the output Tokens, but some tokens must be up-cast to allow them to correctly represent unsigned decimal values. You must use the types specified below when passing in tokens to be packed.
+
+
+See the StructTest.java file for more examples.
 
 ## Accepted specifiers:
   The first char can be a endianness indicator, the following are available
@@ -36,11 +62,11 @@ This library makes all attempts to correctly type the arguments, but some argume
   * ``s`` : Byte Array - java.lang.Byte[]
   * ``S`` : String - java.lang.String
   
-Unlike python, a count can be specified for *any* token type. For the array and String types ('s' and 'S') the count specified is the number of items in the array or the number of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This is for conciseness only. e.g. the following two patterns are functionally the same:
+Unlike python, a integer prefix can be present on *any* token type. For the array and String types ('s' and 'S') the number specified is the count of items in the array or the count of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
 ```
-4i4q4d
-iiiiqqqqdddd
+4i4q4d4s4S
+iiiiqqqqdddd4s4S
 
 ```
 
