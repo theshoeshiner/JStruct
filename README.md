@@ -40,7 +40,7 @@ The output array of the above code is:
 
 ``7fff80007fffffff800000007fffffffffffffff80000000000000007fefffffffffffff00000000000000010406020c4142434445``
 
-This library makes all attempts to correctly type the output Tokens, but some tokens must be up-cast to allow them to correctly represent unsigned decimal values. You must use the types specified below when passing in tokens to be packed.
+This library makes all attempts to correctly type the output tokens, but some tokens must be up-cast to allow them to correctly represent unsigned decimal values. You must use the types specified below when passing in tokens to be packed.
 
 
 See the StructTest.java file for more examples.
@@ -64,7 +64,7 @@ See the StructTest.java file for more examples.
   * ``s`` : Byte Array - java.lang.Byte[]
   * ``S`` : String - java.lang.String
   
-Unlike python, a integer prefix can be present on *any* token type. For the array and String types ('s' and 'S') the number specified is the count of items in the array or the count of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
+Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the count of items in the array or the count of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
 ```
 4i4q4d4s4S
