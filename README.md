@@ -53,18 +53,18 @@ See the StructTest.java file for more examples.
   * ``!`` : Network byte order, same as >
 
   The following token specifiers are supported:
-  * ``h`` : Signed Short (2 bytes) - java.lang.Short
+  * ``h  `` : Signed Short (2 bytes) - java.lang.Short
   * ``H`` : Unsigned Short (2 bytes) - java.lang.Integer
-  * ``i`` : Signed Integer (4 bytes) - java.lang.Integer
-  * ``l`` : Signed Integer (4 bytes) - java.lang.Integer (same as ''i'')
+  * ``i|l`` : Signed Integer (4 bytes) - java.lang.Integer
   * ``I`` : Unsigned Integer (4 bytes) - java.lang.Long
   * ``q`` : Signed Long (8 bytes) - java.lang.Long
   * ``Q`` : Unsigned Long (8 bytes) - java.lang.Long
   * ``d`` : Floating Point Double (8 bytes) - java.lang.Double
   * ``s`` : Byte Array - java.lang.Byte[]
+  * ``c|b`` : Byte - java.lang.Byte
   * ``S`` : String - java.lang.String
   
-Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the count of items in the array or the count of characters in the string. For all other token types the count specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
+Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the length of the array / characters in the string. For all other token types it specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
 ```
 4i4q4d4s4S
@@ -78,4 +78,50 @@ Because java cannot represent an unsigned 8 byte integer with a primitive, the u
 
 ```
 BigInteger bi = new BigInteger(Long.toUnsignedString(n));
+```
+
+##Annotations (beta)
+
+POJO classes can be packed and unpacked using Annotations. Simply annotate each field you want included in the struct with  ``@StructToken``. The core advantage of using the annotations is that you can work with typed objects and named fields instead of a generic ``List<Object>``. The core disadvantage is that you cannot dynamically create the Struct, it is tied to the annotations in the code. You *can* however generate a Struct based on annotations and then *customize* the returned Struct object at runtime. However this will not alter how the annotated entity is packed and unpacked, so most changes to the Struct will make it incompatible with the original entity.
+
+* The ``order`` property is required, because field order is not consistently preserved during compilation. 
+* The ``type`` property is optional, and the types listed above are used to detect the proper type. The only exception is the unsigned long type, which must be manually specified (see example below).
+* The ``unsigned`` property defaults to false. Signed types will always be selected unless this is set to true.
+* The ``length`` property is optional and only valid for ``String`` and ``byte[]`` types. Currently there is no way to map tokens to a List.
+
+Example usage:
+
+```
+	@StructToken(order = 0,length=3)
+	public String myString;
+	
+	@StructToken(order = 2)
+	public Short myShort;
+	
+	@StructToken(order = 1)
+	public Integer myInteger;
+	
+	@StructToken(order = 3)
+	public Long myLong;
+	
+	@StructToken(order = 4)
+	public Double myDouble;
+	
+	@StructToken(order = 5,length=4)
+	public byte[] myByteArray;
+	
+	@StructToken(order = 6)
+	public Boolean myBoolean;
+	
+	@StructToken(order = 7)
+	public Byte myByte;
+	
+	@StructToken(order = 8,unsigned = true)
+	public Integer myShortUnsigned;
+	
+	@StructToken(order = 9,unsigned = true)
+	public Long myIntegerUnsigned;
+	
+	@StructToken(type=TokenType.LongUnsigned, order = 10)
+	public Long myLongUnsigned;
 ```

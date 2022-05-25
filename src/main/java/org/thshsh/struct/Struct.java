@@ -2,15 +2,19 @@ package org.thshsh.struct;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
+import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -28,33 +32,55 @@ import org.apache.commons.lang3.ArrayUtils;
  *
  */
 public class Struct {
+	
+	public static final Logger LOGGER = LoggerFactory.getLogger(Struct.class);
 
 
 	private static final Map<Character, ByteOrder> BYTE_ORDER_MAP = new HashMap<Character, ByteOrder>();
 	static {
-		BYTE_ORDER_MAP.put('>', ByteOrder.BIG_ENDIAN);
-		BYTE_ORDER_MAP.put('<', ByteOrder.LITTLE_ENDIAN);
-		BYTE_ORDER_MAP.put('!', ByteOrder.BIG_ENDIAN);
+		BYTE_ORDER_MAP.put('>', ByteOrder.Big);
+		BYTE_ORDER_MAP.put('<', ByteOrder.Little);
+		BYTE_ORDER_MAP.put('!', ByteOrder.Big);
 		BYTE_ORDER_MAP.put('@', ByteOrder.nativeOrder());
 	}
 
-	protected List<Token> tokens = new ArrayList<Struct.Token>();
+
+	protected List<Token> tokens = new ArrayList<Token>();
 	protected ByteOrder byteOrder;
 	protected Charset charset;
 	
+	public Struct() {
+		this(null,null);
+	}
 
 	public Struct(ByteOrder byteOrder, Charset charset) {
 		this.byteOrder = byteOrder != null ? byteOrder : ByteOrder.nativeOrder();
 		this.charset = charset != null ? charset : Charset.defaultCharset();
 	}
 	
-
-	public void appendToken(Token t) {
+	/* Chaining builder methods */
+	
+	public Struct appendToken(Token t) {
 		tokens.add(t);
+		return this;
+	}
+	
+	public Struct insertToken(Token t,int index) {
+		tokens.add(index, t);
+		return this;
 	}
 
-	public void appendToken(TokenType type, int count) {
-		appendToken(new Token(type, count));
+	public Struct appendToken(TokenType type, int countOrLength) {
+		return appendToken(new Token(type, countOrLength));
+	}
+	
+	public Struct insertToken(TokenType type, int countOrLength, int index) {
+		return insertToken(new Token(type, countOrLength),index);
+	}
+	
+	public Struct byteOrder(ByteOrder bo) {
+		this.byteOrder = bo;
+		return this;
 	}
 
 	public int byteCount() {
@@ -71,116 +97,63 @@ public class Struct {
 		return count;
 	}
 	
-	public static Struct create(String fmt) {
-		return create(fmt, null);
-	}
+	
 
-	public static Struct create(String fmt, Charset cs) {
-		Struct format = new Struct(null, cs);
-		Character x = null;
-		StringBuilder buf = new StringBuilder();
-		for (int i = 0; i < fmt.length(); i++) {
-			x = fmt.charAt(i);
-			if (BYTE_ORDER_MAP.keySet().contains(x)) {
-				format.byteOrder = BYTE_ORDER_MAP.get(x);
-			} else if (Character.isDigit(x)) {
-				buf.append(x);
-			} else {
-				TokenType type = TokenType.valueOf(x.toString());
-				int multiplier = 1;
-				if (buf.length() > 0) {
-					multiplier = Integer.valueOf(buf.toString());
-					if(multiplier<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
-					buf.setLength(0);
-				}
-				format.appendToken(type, multiplier);
+	public byte[] packEntity(Object o) {
+				
+		try {
+			StructEntityConfig config = StructEntityConfig.get(o.getClass());
+			
+			if(!config.struct.tokens.equals(this.tokens)) {
+				LOGGER.error("struct tokens: {} do not match class tokens: {}",this.tokens,config.struct.tokens);
+				throw new IllegalArgumentException("Object does not match this struct");
 			}
+			
+			List<Object> values = new ArrayList<Object>();
+			for(Field field : config.fields) {
+				Object value = field.get(o);
+				values.add(value);
+			}
+									
+			return this.pack(values);
+		} 
+		catch (IllegalAccessException e) {
+			throw new IllegalStateException(e);
+		} 
+		
+	}
+	
+	public <T> T unpackEntity(Class<T> c, byte[] bytes) {
+				
+		try {
+			StructEntityConfig config = StructEntityConfig.get(c);
+			
+			if(!config.struct.tokens.equals(this.tokens)) {
+				LOGGER.error("struct tokens: {} do not match class tokens: {}",this.tokens,config.struct.tokens);
+				throw new IllegalArgumentException("Object does not match this struct");
+			}
+			
+			List<Object> values = this.unpack(bytes);
+			
+			T instance = c.newInstance();
+			
+			for(int i=0;i<values.size();i++) {
+				Field field = config.fields.get(i);
+				Object value = values.get(i);
+				field.set(instance, value);
+			}
+			
+			return instance;
+		} 
+		catch (InstantiationException | IllegalAccessException e) {
+			throw new IllegalArgumentException(e);
 		}
-
-		return format;
+				
 	}
-
-	protected static byte[] packRaw_16b(short val, ByteOrder byteOrder) {
-		
-		
-		byte[] bx = new byte[2];
-
-		bx[0] = (byte) (val & 0xff);
-		bx[1] = (byte) ((val >>> 8) & 0xff);
-
-		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
-
-		return bx;
+	
+	public byte[] pack(Object...objects ) {
+		return pack(Arrays.asList(objects));
 	}
-
-	protected static byte[] packRaw_u16b(int val, ByteOrder byteOrder) {
-		byte[] bx = new byte[2];
-
-		bx[0] = (byte) (val & 0xff);
-		bx[1] = (byte) ((val >>> 8) & 0xff);
-
-		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
-
-		return bx;
-	}
-
-	protected static byte[] packRaw_32b(int val, ByteOrder byteOrder) {
-		byte[] bx = new byte[4];
-
-		bx[0] = (byte) (val & 0xff);
-		bx[1] = (byte) ((val >>> 8) & 0xff);
-		bx[2] = (byte) ((val >>> 16) & 0xff);
-		bx[3] = (byte) ((val >>> 24) & 0xff);
-
-		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
-		
-		return bx;
-	}
-
-	protected static byte[] packRaw_64b(long val, ByteOrder byteOrder) {
-
-		byte[] bx = new byte[8];
-
-		bx[0] = (byte) (val & 0xff);
-		bx[1] = (byte) ((val >>> 8) & 0xff);
-		bx[2] = (byte) ((val >>> 16) & 0xff);
-		bx[3] = (byte) ((val >>> 24) & 0xff);
-		bx[4] = (byte) ((val >>> 32) & 0xff);
-		bx[5] = (byte) ((val >>> 40) & 0xff);
-		bx[6] = (byte) ((val >>> 48) & 0xff);
-		bx[7] = (byte) ((val >>> 56) & 0xff);
-
-		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
-		
-		return bx;
-	}
-
-	protected static byte[] packFloat_64b(double val, ByteOrder byteOrder) {
-
-		long bits = Double.doubleToLongBits(val);
-		byte[] bytes = packRaw_64b(bits, byteOrder);
-		return bytes;
-
-	}
-
-	protected static byte[] packRaw_u32b(long val, ByteOrder byteOrder) {
-		byte[] bx = new byte[4];
-
-		val = val & 0xffffffff;
-
-		if (val >= 0) {
-			bx[0] = (byte) (val & 0xff);
-			bx[1] = (byte) ((val >> 8) & 0xff);
-			bx[2] = (byte) ((val >> 16) & 0xff);
-			bx[3] = (byte) ((val >> 24) & 0xff);
-
-		}
-
-		if (byteOrder == ByteOrder.BIG_ENDIAN) ArrayUtils.reverse(bx);
-		
-		return bx;
-	}
-
 	
 	public byte[] pack(List<Object> vals) {
 
@@ -194,51 +167,60 @@ public class Struct {
 		
 		Iterator<Token> tokens = format.tokens.iterator();
 		Iterator<Object> values = vals.iterator();
+		java.nio.ByteOrder byteOrder = format.byteOrder.getByteOrder();
 		
 		while(tokens.hasNext()) {
 			
 			Token token = tokens.next();
+			int length = token.length;
 			
 			for (int i = 0; i < token.tokenCount(); i++) {
 				Object val = values.next();
 				
-				byte[] bx;
+				byte[] packedBytes;
 				switch (token.type) {
-					case h:
-						bx = packRaw_16b((short) val, format.byteOrder);
+					case Short:
+						packedBytes = Packer.packRaw_16b((short) val, byteOrder);
 						break;
-					case H:
-						bx = packRaw_u16b((int) val, format.byteOrder);
+					case ShortUnsigned:
+						packedBytes = Packer.packRaw_u16b((int) val, byteOrder);
 						break;
-					case i:
-					case l:
-						bx = packRaw_32b(((int) val & 0xffffffff), format.byteOrder);
+					case Integer:
+						packedBytes = Packer.packRaw_32b(((int) val & 0xffffffff), byteOrder);
 						break;
-					case I:
-						bx = packRaw_u32b((long) val, format.byteOrder);
+					case IntegerUnsigned:
+						packedBytes = Packer.packRaw_u32b((long) val, byteOrder);
 						break;
-					case q:
-					case Q:
-						bx = packRaw_64b(((long) val & 0xffffffffffffffffl), format.byteOrder);
+					case Long:
+					case LongUnsigned:
+						packedBytes = Packer.packRaw_64b(((long) val & 0xffffffffffffffffl), byteOrder);
 						break;
-					case d:
-						bx = packFloat_64b((double) val, format.byteOrder);
+					case Double:
+						packedBytes = Packer.packFloat_64b((double) val, byteOrder);
 						break;
-					case s:
-						bx = (byte[]) val;
+					case Bytes:
+						packedBytes = (byte[]) val;
 						break;
-					case S:
-						bx = ((String)val).getBytes(format.charset);
+					case String:
+						packedBytes = ((String)val).getBytes(format.charset);
+						break;
+					case Boolean:
+						packedBytes = new byte[] {((boolean)val)?(byte)1:(byte)0};
+						break;
+					case Byte:
+						packedBytes = new byte[] {(byte) val};
 						break;
 					default:
 						throw new IllegalArgumentException("Unhandled case: " + token.type);
 
 				}
 				
-				System.arraycopy(bx, 0, result, position, bx.length);
-				position += bx.length;
+				if(packedBytes.length != length) throw new IllegalArgumentException("Expected "+length +" bytes but found "+packedBytes.length+" for value "+val);
 				
-				if(token.type.array) break;
+				System.arraycopy(packedBytes, 0, result, position, packedBytes.length);
+				position += packedBytes.length;
+				
+				//if(token.type.array) break;
 			}
 			
 		}
@@ -250,64 +232,16 @@ public class Struct {
 	}
 
 
-	protected static short unpackRaw_16b(byte[] val, ByteOrder byteOrder) {
-
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-
-		int x = ((int) (val[0] & 0xff) << 8) | ((int) (val[1] & 0xff));
-
-		return (short) x;
+	public List<Object> unpack(InputStream stream) throws IOException{
+		byte[] buffer = new byte[byteCount()];
+		IOUtils.readFully(stream, buffer);
+		return unpack(buffer);
 	}
-
-	protected static int unpackRaw_u16b(byte[] val, ByteOrder byteOrder) {
-
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-
-		int x = ((val[0] & 0xff) << 8) | (val[1] & 0xff);
-		return x;
-	}
-
-	protected static int unpackRaw_32b(byte[] val, ByteOrder byteOrder) {
-		
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-		
-		int x = ((int) (val[0] & 0xff) << 24) | ((int) (val[1] & 0xff) << 16) | ((int) (val[2] & 0xff) << 8)
-				| ((int) (val[3] & 0xff));
-
-		return x;
-	}
-
-	protected static long unpackRaw_u32b(byte[] val, ByteOrder byteOrder) {
-		
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-
-		long x = (((long) (val[0] & 0xff)) << 24) | (((long) (val[1] & 0xff)) << 16) | (((long) (val[2] & 0xff)) << 8)
-				| ((long) (val[3] & 0xff));
-		return x;
-	}
-
-	protected static long unpackRaw_64b(byte[] val, ByteOrder byteOrder) {
-		
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-
-		long x = (((long) (val[0] & 0xff)) << 56) | (((long) (val[1] & 0xff)) << 48) | (((long) (val[2] & 0xff)) << 40)
-				| (((long) (val[3] & 0xff)) << 32) | (((long) (val[4] & 0xff)) << 24) | (((long) (val[5] & 0xff)) << 16)
-				| (((long) (val[6] & 0xff)) << 8) | ((long) (val[7] & 0xff));
-		return x;
-	}
-
-	protected static double unpackFloat_64b(byte[] val, ByteOrder byteOrder) {
-
-		if (byteOrder == ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
-
-		long x = unpackRaw_64b(val, byteOrder);
-		double d = Double.longBitsToDouble(x);
-
-		return d;
-	}
-
+	
+	
+	
 	public List<Object> unpack(byte[] vals) {
-
+		
 		Struct format = this;
 		
 		int len = format.byteCount();
@@ -316,10 +250,8 @@ public class Struct {
 
 		List<Object> tokens = new ArrayList<Object>();
 
-		byte[] shortBytes = new byte[2];
-		byte[] intBytes = new byte[4];
-		byte[] longBytes = new byte[8];
-		byte[] dynamicBytes;
+		//reuse arrays when possible
+		byte[][] arrays = new byte[][] {null,new byte[1],new byte[2],null,new byte[4],null,null,null,new byte[8]};
 
 		try {
 			ByteArrayInputStream bs = new ByteArrayInputStream(vals);
@@ -327,51 +259,12 @@ public class Struct {
 			for (Token token : format.tokens) {
 
 				count: for (int i = 0; i < token.tokenCount(); i++) {
-					switch (token.type) {
-					case H:
-						bs.read(shortBytes);
-						tokens.add(unpackRaw_u16b(shortBytes, format.byteOrder));
-						break;
-					case h:
-						bs.read(shortBytes);
-						tokens.add(unpackRaw_16b(shortBytes, format.byteOrder));
-						break;
-					case I:
-						bs.read(intBytes);
-						tokens.add(unpackRaw_u32b(intBytes, format.byteOrder));
-						break;
-					case i:
-						bs.read(intBytes);
-						tokens.add((int) unpackRaw_32b(intBytes, format.byteOrder));
-						break;
-					case l:
-						bs.read(intBytes);
-						tokens.add(unpackRaw_32b(intBytes, format.byteOrder));
-						break;
-					case q:
-						// TODO no such thing as an unsigned 64 bit in java so we process as signed
-					case Q:
-						bs.read(longBytes);
-						tokens.add(unpackRaw_64b(longBytes, format.byteOrder));
-						break;
-					case d:
-						bs.read(longBytes);
-						tokens.add(unpackFloat_64b(longBytes, format.byteOrder));
-						break;
-					case s:
-						dynamicBytes = new byte[token.count];
-						bs.read(dynamicBytes);
-						tokens.add(dynamicBytes);
-						break count;
-					case S:
-						dynamicBytes = new byte[token.count];
-						bs.read(dynamicBytes);
-						String string = new String(dynamicBytes, format.charset);
-						tokens.add(string);
-						break count;
-					default:
-						throw new IllegalArgumentException("unhandled case: " + token.type);
-					}
+					
+					byte[] ar = token.type.array?null:arrays[token.type.size];
+					Object o = unpack(token.type, token.length,bs, byteOrder, charset, ar);
+					tokens.add(o);
+					if(token.type.array) break count;
+
 				}
 
 			}
@@ -383,7 +276,147 @@ public class Struct {
 		return tokens;
 
 	}
+	
+	public static Struct create(String fmt) {
+		return create(fmt, null);
+	}
 
+	public static Struct create(Class<?> structClass) {
+		return StructEntityConfig.get(structClass).createStruct();
+	}
+	
+
+
+	public static Struct create(String fmt, Charset cs) {
+		Struct format = new Struct(null, cs);
+		Character x = null;
+		StringBuilder countOrLengthBuffer = new StringBuilder();
+		for (int i = 0; i < fmt.length(); i++) {
+			x = fmt.charAt(i);
+			if (BYTE_ORDER_MAP.keySet().contains(x)) {
+				format.byteOrder = BYTE_ORDER_MAP.get(x);
+			} else if (Character.isDigit(x)) {
+				countOrLengthBuffer.append(x);
+			} else {
+				TokenType type = TokenType.fromCharacter(x);
+				int countOrLength = 1;
+				if (countOrLengthBuffer.length() > 0) {
+					countOrLength = Integer.valueOf(countOrLengthBuffer.toString());
+					if(countOrLength<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
+					countOrLengthBuffer.setLength(0);
+				}
+				format.appendToken(type, countOrLength);
+			}
+		}
+
+		return format;
+	}
+	
+	public static Object unpack(TokenType type, ByteOrder bo,InputStream is) throws IOException {
+		return unpack(type, 1, is, bo, Charset.defaultCharset(), new byte[type.size]);
+	}
+	
+	public static Object unpack(TokenType type, ByteOrder bo,byte[] bytes) throws IOException {
+		return unpack(type, bo, Charset.defaultCharset(),bytes);
+	}
+	
+	public static Object unpack(TokenType type, InputStream is) throws IOException {
+		return unpack(type, 1, is, ByteOrder.nativeOrder(), Charset.defaultCharset(), new byte[type.size]);
+	}
+	
+	public static Object unpack(TokenType type, Integer length,InputStream bs,ByteOrder byteOrder,Charset charset,byte[] bytes) throws IOException {
+		if(bytes == null) bytes = new byte[length];
+		IOUtils.readFully(bs, bytes);
+		return unpack(type,  byteOrder, charset, bytes);
+	}
+	
+	public static Object unpack(TokenType type, ByteOrder order,Charset charset,byte[] bytes) throws IOException {
+	
+		java.nio.ByteOrder byteOrder = order.getByteOrder();
+				
+		switch (type) {
+			case ShortUnsigned:
+				return Packer.unpackRaw_u16b(bytes, byteOrder);
+			case Short:
+				return Packer.unpackRaw_16b(bytes, byteOrder);
+			case IntegerUnsigned:
+				return Packer.unpackRaw_u32b(bytes, byteOrder);
+			case Integer:
+				return Packer.unpackRaw_32b(bytes, byteOrder);
+			case LongUnsigned:
+				//no such thing as an unsigned 64 bit in java so we process as signed
+			case Long:
+				return Packer.unpackRaw_64b(bytes, byteOrder);
+			case Double:
+				return Packer.unpackFloat_64b(bytes, byteOrder);
+			case Bytes:
+				return bytes;
+			case String:
+				String string = new String(bytes, charset);
+				return string;
+			case Byte:
+				return bytes[0];
+			case Boolean:
+				return bytes[0] != 0;
+			default:
+				throw new IllegalArgumentException("unhandled case: " + type);
+		}
+	}
+
+	
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("[tokens=");
+		builder.append(tokens);
+		builder.append(", byteOrder=");
+		builder.append(byteOrder);
+		builder.append(", charset=");
+		builder.append(charset);
+		builder.append("]");
+		return builder.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((byteOrder == null) ? 0 : byteOrder.hashCode());
+		result = prime * result + ((charset == null) ? 0 : charset.hashCode());
+		result = prime * result + ((tokens == null) ? 0 : tokens.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Struct other = (Struct) obj;
+		if (byteOrder == null) {
+			if (other.byteOrder != null)
+				return false;
+		} else if (!byteOrder.equals(other.byteOrder))
+			return false;
+		if (charset == null) {
+			if (other.charset != null)
+				return false;
+		} else if (!charset.equals(other.charset))
+			return false;
+		if (tokens == null) {
+			if (other.tokens != null)
+				return false;
+		} else if (!tokens.equals(other.tokens))
+			return false;
+		return true;
+	}
+
+	 
+	
 	/*	public static Format createFormat(String fmt) {
 			return createFormat(fmt, null);
 		}
@@ -461,73 +494,5 @@ public class Struct {
 		}
 	
 	}*/
-
-	public static class Token {
-		protected TokenType type;
-		private int count;
-		protected int byteCount;
-
-		public Token(TokenType type, int count) {
-			super();
-			this.type = type;
-			this.count = count;
-			if (count == 0)
-				throw new IllegalArgumentException("Count cannot be zero");
-			byteCount = count * type.size;
-		}
-
-		public int tokenCount() {
-			return type.array?1:count;
-		}
-		
-		public int byteCount() {
-			return byteCount;
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			builder.append("[type=");
-			builder.append(type);
-			builder.append(", count=");
-			builder.append(count);
-			builder.append(", byteCount=");
-			builder.append(byteCount);
-			builder.append("]");
-			return builder.toString();
-		}
-
-	}
-
-	/**
-	 * i and l are the same q and Q are treated the same because we cannot represent
-	 * an unsigned long
-	 * 
-	 * @author daniel.watson
-	 *
-	 */
-	public enum TokenType {
-		h(2,false), // short
-		H(2,false), // short unsigned
-		i(4,false), // integer
-		l(4,false), // integer
-		I(4,false), // integer unsigned
-		q(8,false), // long
-		Q(8,false), // long unsigned
-		d(8,false), // double
-		s(1,true), // byte array
-		S(1,true) // string
-		;
-
-		//size in bytes of this token
-		int size;
-		//array types combine the entire count into one array
-		boolean array;
-
-		private TokenType(int size,boolean ar) {
-			this.size = size;
-			this.array = ar;
-		}
-	}
 	
 }

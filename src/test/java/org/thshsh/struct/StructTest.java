@@ -18,35 +18,44 @@ public class StructTest {
 	public void testInteger() {
 		Struct f = Struct.create(">iii");
 		List<Object> input = Arrays.asList(Integer.MAX_VALUE,Integer.MIN_VALUE,0);
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testByte() {
 		Struct f = Struct.create(">4s3s");
 		List<Object> input = Arrays.asList(new byte[] {4,6,2,12},new byte[] {Byte.MAX_VALUE,Byte.MIN_VALUE,0});
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
+	}
+	
+	@Test
+	public void testBoolean() {
+		Struct f = Struct.create(">4t");
+		List<Object> input = Arrays.asList(true,false,true,true);
+		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testShort() {
 		Struct f = Struct.create(">hhh");
 		List<Object> input = Arrays.asList(Short.MAX_VALUE,Short.MIN_VALUE,(short)0);
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testLong() {
 		Struct f = Struct.create(">qqq");
 		List<Object> input = Arrays.asList(Long.MAX_VALUE,Long.MIN_VALUE,0l);
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testDouble() {
 		Struct f = Struct.create(">ddd");
 		List<Object> input = Arrays.asList(Double.MAX_VALUE,Double.MIN_VALUE,0d);
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
+		f = Struct.create("<ddd");
+		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
@@ -75,7 +84,7 @@ public class StructTest {
 				new byte[] {12,3,4},
 				"test"
 				);
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
 		
 	}
 	
@@ -86,17 +95,76 @@ public class StructTest {
 		});
 	}
 	
+	@Test()
+	public void testWrongLength() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Struct s = Struct.create(">2S");
+			s.pack("ab");
+			s.pack("abc");
+		});
+	}
+	
 	
 	@Test
 	public void testString() {
 		Struct f = Struct.create(">S3S4S");
 		List<Object> input = Arrays.asList("A","BBB","CCCC");
-		testInput(f,input);
+		testListInputAllByteOrders(f,input);
 	}
 	
+	@Test
+	public void testEntity() {
+		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		testObjectInputAllOrders(mea);
+	}
 	
+	@Test
+	public void testEntityWrongLength() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			MyStructEntity mea = new MyStructEntity("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+			Struct.create(MyStructEntity.class).packEntity(mea);
+		});
+	}
 	
-	public static void testInput(Struct format, List<Object> input) {
+	@Test
+	public void testDuplicateEntity() {
+		//make sure we can unpack objects of different types as long as the struct configs are the same
+		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct s = Struct.create(MyStructEntity.class);
+		byte[] bytes = s.packEntity(mea);
+		MyStructEntityCopy copy = s.unpackEntity(MyStructEntityCopy.class, bytes);
+		Assertions.assertTrue(copy.equalsOriginal(mea));
+	}
+	
+	public static void testObjectInputAllOrders(Object input) {
+		Struct struct = Struct.create(input.getClass());
+		struct.byteOrder = ByteOrder.Big;
+		testObjectInput(struct, input);
+		struct.byteOrder = ByteOrder.Little;
+		testObjectInput(struct, input);
+		struct.byteOrder = ByteOrder.Native;
+		testObjectInput(struct, input);
+	}
+	
+	public static void testObjectInput(Struct struct, Object in) {
+		byte[] array = struct.packEntity(in);
+		LOGGER.info("packed: {}",new Object[] {array});
+		Object out = struct.unpackEntity(in.getClass(),array);
+		Assertions.assertEquals(in, out);
+	
+	}
+	
+	public static void testListInputAllByteOrders(Struct format, List<Object> input) {
+		format.byteOrder = ByteOrder.Little;
+		testListInput(format, input);
+		format.byteOrder = ByteOrder.Big;
+		testListInput(format, input);
+		format.byteOrder = ByteOrder.Native;
+		testListInput(format, input);
+	}
+	
+	public static void testListInput(Struct format, List<Object> input) {
+		
 		LOGGER.info("input: {}",new Object[] {input});
 		byte[] packed = format.pack( input);
 		LOGGER.info("packed: {}",new Object[] {packed});
