@@ -16,15 +16,22 @@ public class StructTest {
 
 	@Test
 	public void testInteger() {
-		Struct f = Struct.create(">iii");
+		Struct f = Struct.create("iii");
 		List<Object> input = Arrays.asList(Integer.MAX_VALUE,Integer.MIN_VALUE,0);
 		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
-	public void testByte() {
-		Struct f = Struct.create(">4s3s");
+	public void testBytes() {
+		Struct f = Struct.create("4s3s");
 		List<Object> input = Arrays.asList(new byte[] {4,6,2,12},new byte[] {Byte.MAX_VALUE,Byte.MIN_VALUE,0});
+		testListInputAllByteOrders(f,input);
+	}
+	
+	@Test
+	public void testByte() {
+		Struct f = Struct.create("4bb");
+		List<Object> input = Arrays.asList((byte)1,(byte)2,(byte)3,(byte)4,(byte)5);
 		testListInputAllByteOrders(f,input);
 	}
 	
@@ -37,21 +44,21 @@ public class StructTest {
 	
 	@Test
 	public void testShort() {
-		Struct f = Struct.create(">hhh");
+		Struct f = Struct.create("hhh");
 		List<Object> input = Arrays.asList(Short.MAX_VALUE,Short.MIN_VALUE,(short)0);
 		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testLong() {
-		Struct f = Struct.create(">qqq");
+		Struct f = Struct.create("qqq");
 		List<Object> input = Arrays.asList(Long.MAX_VALUE,Long.MIN_VALUE,0l);
 		testListInputAllByteOrders(f,input);
 	}
 	
 	@Test
 	public void testDouble() {
-		Struct f = Struct.create(">ddd");
+		Struct f = Struct.create("ddd");
 		List<Object> input = Arrays.asList(Double.MAX_VALUE,Double.MIN_VALUE,0d);
 		testListInputAllByteOrders(f,input);
 		f = Struct.create("<ddd");
@@ -60,7 +67,7 @@ public class StructTest {
 	
 	@Test
 	public void testCombined() {
-		Struct struct = Struct.create(">2h2i2q2d4s5S");
+		Struct struct = Struct.create("2h2i2q2d4s5S");
 		List<Object> input = Arrays.asList(
 				Short.MAX_VALUE,Short.MIN_VALUE,
 				Integer.MAX_VALUE,Integer.MIN_VALUE,
@@ -75,7 +82,7 @@ public class StructTest {
 	
 	@Test()
 	public void testCount() {
-		Struct f = Struct.create(">2d2q2h2i3s4S");
+		Struct f = Struct.create("2d2q2h2i3s4S");
 		List<Object> input = Arrays.asList(
 				Double.MAX_VALUE,Double.MIN_VALUE,
 				Long.MAX_VALUE,Long.MIN_VALUE,
@@ -98,7 +105,7 @@ public class StructTest {
 	@Test()
 	public void testWrongLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			Struct s = Struct.create(">2S");
+			Struct s = Struct.create("2S");
 			s.pack("ab");
 			s.pack("abc");
 		});
@@ -107,7 +114,7 @@ public class StructTest {
 	
 	@Test
 	public void testString() {
-		Struct f = Struct.create(">S3S4S");
+		Struct f = Struct.create("S3S4S");
 		List<Object> input = Arrays.asList("A","BBB","CCCC");
 		testListInputAllByteOrders(f,input);
 	}
