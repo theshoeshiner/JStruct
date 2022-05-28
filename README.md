@@ -88,6 +88,7 @@ POJO classes can be packed and unpacked using Annotations. Simply annotate each 
 * The ``type`` property is optional, and the types listed above are used to detect the proper type. The only exception is the unsigned long type, which must be manually specified (see example below).
 * The ``unsigned`` property defaults to false. Signed types will always be selected unless this is set to true.
 * The ``length`` property is optional and only valid for ``String`` and ``byte[]`` types. Currently there is no way to map tokens to a List.
+* The ``prefix`` and ``suffix`` properties tell the Struct to ignore a certain number of bytes before or after the token.
 
 Example usage:
 
@@ -125,3 +126,5 @@ Example usage:
 	@StructToken(type=TokenType.LongUnsigned, order = 10)
 	public Long myLongUnsigned;
 ```
+
+The ``@StructEntity`` Annotation can be used to further customize the packing process.
