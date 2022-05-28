@@ -49,7 +49,9 @@ public enum TokenType {
 	
 	public static TokenType fromCharacter(char c) {
 		for(TokenType type : values()) {
-			if(type.characters.indexOf(c) > -1) return type;
+			if(type.characters.indexOf(c) > -1) {
+				return type;
+			}
 		}
 		throw new IllegalArgumentException();
 	}

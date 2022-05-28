@@ -15,22 +15,30 @@ public class Token {
 	protected int length;
 	//cache calculation of byte count
 	protected int byteCount;
+	//prefix to ignore
+	protected int prefix;
+	//suffix to ignore
+	protected int suffix;
 	
 	public Token(TokenType type, int countOrLength) {
-		this(type,type.array?1:countOrLength,type.array?countOrLength:1);
+		this(type,type.array?1:countOrLength,type.array?countOrLength:0,0,0);
 	}
 
-	public Token(TokenType type, int count, int size) {
+	public Token(TokenType type, int count, int l, int p, int s) {
 		super();
 		this.type = type;
+		if(!type.array && l > 0) throw new IllegalArgumentException("Length cannot be specified for Struct Token type: "+type);
 		if(type.array) {
-			this.length = size;
+			this.length = l;
 		}
 		else this.length = type.size;
 		this.count = count;
 		if (count == 0)
 			throw new IllegalArgumentException("Count cannot be zero");
-		byteCount = count * length;
+		this.prefix = p;
+		this.suffix = s;
+		
+		byteCount = count * length + prefix + suffix;
 		
 	}
 
@@ -40,6 +48,14 @@ public class Token {
 	
 	public int length() {
 		return length;
+	}
+	
+	public int prefix() {
+		return prefix;
+	}
+	
+	public int suffix() {
+		return suffix;
 	}
 	
 	public int byteCount() {
@@ -55,8 +71,10 @@ public class Token {
 		builder.append(count);
 		builder.append(", length=");
 		builder.append(length);
-		builder.append(", byteCount=");
-		builder.append(byteCount);
+		builder.append(", prefix=");
+		builder.append(prefix);
+		builder.append(", suffix=");
+		builder.append(suffix);
 		builder.append("]");
 		return builder.toString();
 	}
@@ -67,6 +85,8 @@ public class Token {
 		int result = 1;
 		result = prime * result + count;
 		result = prime * result + length;
+		result = prime * result + prefix;
+		result = prime * result + suffix;
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
@@ -83,6 +103,10 @@ public class Token {
 		if (count != other.count)
 			return false;
 		if (length != other.length)
+			return false;
+		if (prefix != other.prefix)
+			return false;
+		if (suffix != other.suffix)
 			return false;
 		if (type != other.type)
 			return false;

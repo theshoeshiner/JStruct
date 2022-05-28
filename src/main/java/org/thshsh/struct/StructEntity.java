@@ -9,9 +9,10 @@ import java.lang.annotation.Target;
 @Target({ ElementType.TYPE })
 public @interface StructEntity {
 
-	//TODO handle these in Struct class
+	
 	ByteOrder byteOrder() default ByteOrder.Native;
-	boolean pad() default false;
-	byte padByte() default 0;
+	String charset() default "";
+	boolean trimAndPad() default false;
+	
 	
 }

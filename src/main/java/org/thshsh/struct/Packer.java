@@ -1,8 +1,13 @@
 package org.thshsh.struct;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Packer {
+	
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(Packer.class);
 
 	protected static byte[] packRaw_16b(short val, java.nio.ByteOrder byteOrder) {
 		
@@ -95,6 +100,9 @@ public class Packer {
 	}
 
 	protected static int unpackRaw_u16b(byte[] val, java.nio.ByteOrder byteOrder) {
+		
+		LOGGER.info("unpackRaw_u16b: {}",val);
+		
 	
 		if (byteOrder == java.nio.ByteOrder.LITTLE_ENDIAN) ArrayUtils.reverse(val);
 	

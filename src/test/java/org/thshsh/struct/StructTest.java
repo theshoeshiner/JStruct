@@ -1,6 +1,7 @@
 package org.thshsh.struct;
 
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings({"rawtypes","unchecked"})
 public class StructTest {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(StructTest.class);
@@ -41,6 +43,13 @@ public class StructTest {
 		List<Object> input = Arrays.asList(true,false,true,true);
 		testListInputAllByteOrders(f,input);
 	}
+	
+	/*@Test
+	public void testUnsignedShort() {
+		Struct f = Struct.create(">h");
+		byte[] bytes = new byte[] {0,63};
+		List<Object> tokens = f.unpack(bytes);
+	}*/
 	
 	@Test
 	public void testShort() {
@@ -103,6 +112,27 @@ public class StructTest {
 	}
 	
 	@Test()
+	public void testInvalidLength() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Struct.create(MyStructInvalidLength.class);
+		});
+	}
+	
+	@Test()
+	public void testPublicFields() {
+		StructWithPublicFields i = new StructWithPublicFields();
+		i.id = 12;
+		testObjectInputAllOrders(i);
+	}
+	
+	@Test()
+	public void testPrivateFields() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Struct.create(StructWithPrivateFields.class);
+		});
+	}
+	
+	@Test()
 	public void testWrongLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			Struct s = Struct.create("2S");
@@ -110,6 +140,7 @@ public class StructTest {
 			s.pack("abc");
 		});
 	}
+	
 	
 	
 	@Test
@@ -126,6 +157,33 @@ public class StructTest {
 	}
 	
 	@Test
+	public void testChildEntity() {
+		MyStructEntityChild entity = new MyStructEntityChild("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE,"abcdefgh");
+		testObjectInputAllOrders(entity);
+	}
+	
+	@Test
+	public void testPrefixAndStuffix() throws IOException {
+		MyEntityWithPrefixAndSuffix mea = new MyEntityWithPrefixAndSuffix("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		testObjectInputAllOrders(mea);
+		
+		byte[] packed = Struct.create(MyEntityWithPrefixAndSuffix.class).packEntity(mea);
+		MyEntityWithPrefixAndSuffix unpacked = Struct.create(MyEntityWithPrefixAndSuffix.class).unpackEntity(packed);
+		
+		MyStructEntity original = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Assertions.assertTrue(unpacked.equalsOriginal(original));
+	}
+	
+	@Test
+	public void testGeneric() throws IOException {
+		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<MyStructEntity> s = Struct.create(MyStructEntity.class);
+		byte[] bytes =s.packEntity(mea);
+		MyStructEntity unpacked = s.unpackEntity(bytes);
+		Assertions.assertTrue(unpacked.equals(mea));
+	}
+	
+	@Test
 	public void testEntityWrongLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			MyStructEntity mea = new MyStructEntity("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
@@ -137,11 +195,58 @@ public class StructTest {
 	public void testDuplicateEntity() {
 		//make sure we can unpack objects of different types as long as the struct configs are the same
 		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct s = Struct.create(MyStructEntity.class);
+		Struct<MyStructEntity> s = Struct.create(MyStructEntity.class);
 		byte[] bytes = s.packEntity(mea);
 		MyStructEntityCopy copy = s.unpackEntity(MyStructEntityCopy.class, bytes);
 		Assertions.assertTrue(copy.equalsOriginal(mea));
 	}
+	
+	@Test
+	public void testEntityWithClassAnnotation() {
+		MyStructEntityWithAnn mea = new MyStructEntityWithAnn("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		StructEntity sc = MyStructEntityWithAnn.class.getAnnotation(StructEntity.class);
+		Struct<MyStructEntityWithAnn> s = Struct.create(MyStructEntityWithAnn.class);
+		Assertions.assertEquals(s.byteOrder,sc.byteOrder());
+		Assertions.assertEquals(s.charset.name(),sc.charset());
+		byte[] bytes = s.packEntity(mea);
+		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
+		Assertions.assertTrue(copy.equals(mea));
+	}
+	
+	@Test
+	public void testTrimAndPad() {
+		MyStructEntityWithAnn mea = new MyStructEntityWithAnn("ab ",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<MyStructEntityWithAnn> s = Struct.create(MyStructEntityWithAnn.class);
+		byte[] bytes = s.packEntity(mea);
+		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
+		Assertions.assertEquals(copy.myString, "ab");
+		
+		bytes = s.packEntity(copy);
+		
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			s.trimAndPad(false);
+			s.packEntity(copy);
+		});
+		
+	}
+	
+	
+	@Test
+	public void testChildOverride() {
+		
+		Struct<StructChildLong> sl = Struct.create(StructChildLong.class);
+		Struct<StructChildInteger> si = Struct.create(StructChildInteger.class);
+		
+		Assertions.assertEquals(sl.byteCount(), si.byteCount()+4);
+		
+		byte[] slbytes  = sl.packEntity(new StructChildLong("abc",123l));
+		byte[] sibytes = si.packEntity(new StructChildInteger("abc",123));
+		
+		LOGGER.info("lon bytes: {}",slbytes);
+		LOGGER.info("int bytes: {}",sibytes);
+		
+	}
+	
 	
 	public static void testObjectInputAllOrders(Object input) {
 		Struct struct = Struct.create(input.getClass());

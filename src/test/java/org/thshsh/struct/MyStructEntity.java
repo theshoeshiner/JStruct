@@ -24,7 +24,7 @@ public class MyStructEntity {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 10)
+	@StructToken(type=TokenType.LongUnsigned, order = 11)
 	public Long myLongUnsigned;
 	
 	public MyStructEntity() {}
@@ -47,6 +47,116 @@ public class MyStructEntity {
 	}
 
 
+
+
+	public String getMyString() {
+		return myString;
+	}
+
+
+	public void setMyString(String myString) {
+		this.myString = myString;
+	}
+
+
+	public Short getMyShort() {
+		return myShort;
+	}
+
+
+	public void setMyShort(Short myShort) {
+		this.myShort = myShort;
+	}
+
+
+	public Integer getMyInteger() {
+		return myInteger;
+	}
+
+
+	public void setMyInteger(Integer myInteger) {
+		this.myInteger = myInteger;
+	}
+
+
+	public Long getMyLong() {
+		return myLong;
+	}
+
+
+	public void setMyLong(Long myLong) {
+		this.myLong = myLong;
+	}
+
+
+	public Double getMyDouble() {
+		return myDouble;
+	}
+
+
+	public void setMyDouble(Double myDouble) {
+		this.myDouble = myDouble;
+	}
+
+
+	public byte[] getMyByteArray() {
+		return myByteArray;
+	}
+
+
+	public void setMyByteArray(byte[] myByteArray) {
+		this.myByteArray = myByteArray;
+	}
+
+
+	public Boolean getMyBoolean() {
+		return myBoolean;
+	}
+
+
+	public void setMyBoolean(Boolean myBoolean) {
+		this.myBoolean = myBoolean;
+	}
+
+
+	public Byte getMyByte() {
+		return myByte;
+	}
+
+
+	public void setMyByte(Byte myByte) {
+		this.myByte = myByte;
+	}
+
+
+	public Integer getMyShortUnsigned() {
+		return myShortUnsigned;
+	}
+
+
+	public void setMyShortUnsigned(Integer myShortUnsigned) {
+		this.myShortUnsigned = myShortUnsigned;
+	}
+
+
+	public Long getMyIntegerUnsigned() {
+		return myIntegerUnsigned;
+	}
+
+
+	public void setMyIntegerUnsigned(Long myIntegerUnsigned) {
+		this.myIntegerUnsigned = myIntegerUnsigned;
+	}
+
+
+	public Long getMyLongUnsigned() {
+		return myLongUnsigned;
+	}
+
+
+	public void setMyLongUnsigned(Long myLongUnsigned) {
+		this.myLongUnsigned = myLongUnsigned;
+	}
 
 
 	@Override

@@ -3,7 +3,7 @@ package org.thshsh.struct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,9 +12,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.thshsh.struct.StructEntityMapping.Mapping;
 
 /**
  * 
@@ -31,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * 
  *
  */
-public class Struct {
+public class Struct<T> {
 	
 	public static final Logger LOGGER = LoggerFactory.getLogger(Struct.class);
 
@@ -48,6 +51,9 @@ public class Struct {
 	protected List<Token> tokens = new ArrayList<Token>();
 	protected ByteOrder byteOrder;
 	protected Charset charset;
+	protected Class<T> entityClass;
+	protected Boolean pad = false;
+	protected Boolean trimAndPad = false;
 	
 	public Struct() {
 		this(null,null);
@@ -60,29 +66,39 @@ public class Struct {
 	
 	/* Chaining builder methods */
 	
-	public Struct appendToken(Token t) {
+	public Struct<T> appendToken(Token t) {
 		tokens.add(t);
 		return this;
 	}
 	
-	public Struct insertToken(Token t,int index) {
+	public Struct<T> insertToken(Token t,int index) {
 		tokens.add(index, t);
 		return this;
 	}
 
-	public Struct appendToken(TokenType type, int countOrLength) {
+	public Struct<T> appendToken(TokenType type, int countOrLength) {
 		return appendToken(new Token(type, countOrLength));
 	}
 	
-	public Struct insertToken(TokenType type, int countOrLength, int index) {
+	public Struct<T> insertToken(TokenType type, int countOrLength, int index) {
 		return insertToken(new Token(type, countOrLength),index);
 	}
 	
-	public Struct byteOrder(ByteOrder bo) {
+	public Struct<T> byteOrder(ByteOrder bo) {
 		this.byteOrder = bo;
 		return this;
 	}
 
+	public Struct<T> charset(Charset cs) {
+		this.charset = cs;
+		return this;
+	}
+
+	public Struct<T> trimAndPad(boolean b) {
+		this.trimAndPad = b;
+		return this;
+	}
+	
 	public int byteCount() {
 		int size = 0;
 		for (Token t : tokens)
@@ -99,57 +115,75 @@ public class Struct {
 	
 	
 
-	public byte[] packEntity(Object o) {
+	public T unpackEntity(InputStream stream) throws IOException {
+		return unpackEntity(entityClass, stream);
+	}
+	
+	public T unpackEntity(byte[] bytes) throws IOException {
+		return unpackEntity(entityClass, bytes);
+	}
+	
+	public <V> V unpackEntity(Class<V> c, InputStream stream) throws IOException {
+		byte[] buffer = new byte[byteCount()];
+		IOUtils.readFully(stream, buffer);
+		return unpackEntity(c,buffer);
+	}
+	
+	public <V> V unpackEntity(Class<V> c, byte[] bytes) {
 				
 		try {
-			StructEntityConfig config = StructEntityConfig.get(o.getClass());
+			StructEntityMapping<V> config = StructEntityMapping.get(c);
+			config.validate(this);
 			
-			if(!config.struct.tokens.equals(this.tokens)) {
-				LOGGER.error("struct tokens: {} do not match class tokens: {}",this.tokens,config.struct.tokens);
-				throw new IllegalArgumentException("Object does not match this struct");
+			List<Object> values = this.unpack(bytes);
+			V instance = c.newInstance();
+			
+			for(int i=0;i<values.size();i++) {
+				Mapping field = config.mappings.get(i);
+				Object value = values.get(i);
+				if(field.property != null) {
+					PropertyUtils.setSimpleProperty(instance, field.property.getName(), value);
+				}
+				else {
+					field.field.set(instance, value);
+				}
 			}
 			
+			return instance;
+		} 
+		catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			throw new IllegalArgumentException("Cannot unpack class",e);
+		}
+				
+	}
+	
+
+	public  byte[] packEntity(Object o) {
+				
+		try {
+			StructEntityMapping<?> config = StructEntityMapping.get(o.getClass());
+			config.validate(this);
+			
 			List<Object> values = new ArrayList<Object>();
-			for(Field field : config.fields) {
-				Object value = field.get(o);
+			for(Mapping mapping : config.mappings) {
+				Object value;
+				if(mapping.property != null) {
+					value = PropertyUtils.getSimpleProperty(o, mapping.property.getName());
+				}
+				else {
+					value = mapping.field.get(o);
+				}
 				values.add(value);
 			}
 									
 			return this.pack(values);
 		} 
-		catch (IllegalAccessException e) {
-			throw new IllegalStateException(e);
+		catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			throw new IllegalArgumentException("Cannot pack class",e);
 		} 
 		
 	}
 	
-	public <T> T unpackEntity(Class<T> c, byte[] bytes) {
-				
-		try {
-			StructEntityConfig config = StructEntityConfig.get(c);
-			
-			if(!config.struct.tokens.equals(this.tokens)) {
-				LOGGER.error("struct tokens: {} do not match class tokens: {}",this.tokens,config.struct.tokens);
-				throw new IllegalArgumentException("Object does not match this struct");
-			}
-			
-			List<Object> values = this.unpack(bytes);
-			
-			T instance = c.newInstance();
-			
-			for(int i=0;i<values.size();i++) {
-				Field field = config.fields.get(i);
-				Object value = values.get(i);
-				field.set(instance, value);
-			}
-			
-			return instance;
-		} 
-		catch (InstantiationException | IllegalAccessException e) {
-			throw new IllegalArgumentException(e);
-		}
-				
-	}
 	
 	public byte[] pack(Object...objects ) {
 		return pack(Arrays.asList(objects));
@@ -157,23 +191,24 @@ public class Struct {
 	
 	public byte[] pack(List<Object> vals) {
 
-		Struct format = this;
-		int len = format.tokenCount();
-		if (len != vals.size())throw new IllegalArgumentException("format tokens: " + len + " does not equal value tokens: " + vals.size());
+		int tokenCount = tokenCount();
+		if (tokenCount != vals.size())throw new IllegalArgumentException("format tokens: " + tokenCount + " does not equal value tokens: " + vals.size());
 
-		byte[] result = new byte[format.byteCount()];
+		byte[] result = new byte[byteCount()];
 
 		int position = 0;
 		
-		Iterator<Token> tokens = format.tokens.iterator();
+		Iterator<Token> tokens = this.tokens.iterator();
 		Iterator<Object> values = vals.iterator();
-		java.nio.ByteOrder byteOrder = format.byteOrder.getByteOrder();
+		java.nio.ByteOrder byteOrder = this.byteOrder.getByteOrder();
 		
 		while(tokens.hasNext()) {
 			
 			Token token = tokens.next();
 			int length = token.length;
 			
+			position += token.prefix;
+						
 			for (int i = 0; i < token.tokenCount(); i++) {
 				Object val = values.next();
 				
@@ -202,7 +237,12 @@ public class Struct {
 						packedBytes = (byte[]) val;
 						break;
 					case String:
-						packedBytes = ((String)val).getBytes(format.charset);
+						String string = (String) val;
+						if(string.length() != token.length) {
+							if(!trimAndPad) throw new IllegalArgumentException("Expected String of length "+token.length+" but recieved "+string.length());
+							else string = StringUtils.rightPad(string, token.length);
+						}
+						packedBytes = (string).getBytes(this.charset);
 						break;
 					case Boolean:
 						packedBytes = new byte[] {((boolean)val)?(byte)1:(byte)0};
@@ -217,11 +257,13 @@ public class Struct {
 				
 				if(packedBytes.length != length) throw new IllegalArgumentException("Expected "+length +" bytes but found "+packedBytes.length+" for value "+val);
 				
+
 				System.arraycopy(packedBytes, 0, result, position, packedBytes.length);
 				position += packedBytes.length;
 				
-				//if(token.type.array) break;
 			}
+			
+			position += token.suffix;
 			
 		}
 		
@@ -241,8 +283,8 @@ public class Struct {
 	
 	
 	public List<Object> unpack(byte[] vals) {
-		
-		Struct format = this;
+				
+		Struct<?> format = this;
 		
 		int len = format.byteCount();
 
@@ -255,17 +297,21 @@ public class Struct {
 
 		try {
 			ByteArrayInputStream bs = new ByteArrayInputStream(vals);
-
+			
 			for (Token token : format.tokens) {
 
+				IOUtils.readFully(bs, token.prefix);
+				
 				count: for (int i = 0; i < token.tokenCount(); i++) {
 					
-					byte[] ar = token.type.array?null:arrays[token.type.size];
-					Object o = unpack(token.type, token.length,bs, byteOrder, charset, ar);
+					byte[] ar = token.type.array?new byte[token.length]:arrays[token.type.size];
+					Object o = unpack(token.type,  byteOrder, charset, ar,bs,this.trimAndPad);
 					tokens.add(o);
 					if(token.type.array) break count;
 
 				}
+				
+				IOUtils.readFully(bs, token.suffix);
 
 			}
 
@@ -277,18 +323,16 @@ public class Struct {
 
 	}
 	
-	public static Struct create(String fmt) {
+	public static Struct<List<Object>> create(String fmt) {
 		return create(fmt, null);
 	}
 
-	public static Struct create(Class<?> structClass) {
-		return StructEntityConfig.get(structClass).createStruct();
+	public static <T> Struct<T> create(Class<T> structClass) {
+		return StructEntityMapping.get(structClass).createStruct();
 	}
-	
 
-
-	public static Struct create(String fmt, Charset cs) {
-		Struct format = new Struct(null, cs);
+	public static Struct<List<Object>> create(String fmt, Charset cs) {
+		Struct<List<Object>> format = new Struct<>(null, cs);
 		Character x = null;
 		StringBuilder countOrLengthBuffer = new StringBuilder();
 		for (int i = 0; i < fmt.length(); i++) {
@@ -312,26 +356,44 @@ public class Struct {
 		return format;
 	}
 	
+	/*
+	 * Static methods for quickly unpacking single tokens without creating a struct
+	 */
+	
 	public static Object unpack(TokenType type, ByteOrder bo,InputStream is) throws IOException {
-		return unpack(type, 1, is, bo, Charset.defaultCharset(), new byte[type.size]);
+		return unpack(type,  bo, Charset.defaultCharset(), new byte[type.size],is,(Boolean) null);
 	}
 	
 	public static Object unpack(TokenType type, ByteOrder bo,byte[] bytes) throws IOException {
 		return unpack(type, bo, Charset.defaultCharset(),bytes);
 	}
 	
-	public static Object unpack(TokenType type, InputStream is) throws IOException {
-		return unpack(type, 1, is, ByteOrder.nativeOrder(), Charset.defaultCharset(), new byte[type.size]);
+	public static Object unpack(TokenType type,int length,Charset charset,InputStream is) throws IOException {
+		return unpack(type,  ByteOrder.nativeOrder(), charset, new byte[length],is,(Boolean) null);
 	}
 	
-	public static Object unpack(TokenType type, Integer length,InputStream bs,ByteOrder byteOrder,Charset charset,byte[] bytes) throws IOException {
-		if(bytes == null) bytes = new byte[length];
+	public static Object unpack(TokenType type, InputStream is) throws IOException {
+		return unpack(type,  ByteOrder.nativeOrder(), Charset.defaultCharset(), new byte[type.size],is,(Boolean) null);
+	}
+	
+	public static Object unpack(TokenType type, Integer length,ByteOrder byteOrder,Charset charset,InputStream bs) throws IOException {
+		byte[] bytes = new byte[length];
 		IOUtils.readFully(bs, bytes);
 		return unpack(type,  byteOrder, charset, bytes);
 	}
 	
-	public static Object unpack(TokenType type, ByteOrder order,Charset charset,byte[] bytes) throws IOException {
+	public static Object unpack(TokenType type, ByteOrder byteOrder,Charset charset,byte[] bytes,InputStream bs, Boolean trim) throws IOException {
+		IOUtils.readFully(bs, bytes);
+		return unpack(type,  byteOrder, charset, bytes,trim);
+	}
 	
+	public static Object unpack(TokenType type, ByteOrder order,Charset charset,byte[] bytes) throws IOException {
+		return unpack(type,order,charset,bytes,(Boolean)null);
+	}
+	
+	public static Object unpack(TokenType type, ByteOrder order,Charset charset,byte[] bytes, Boolean trim) throws IOException {
+	
+		if(trim == null) trim = false;
 		java.nio.ByteOrder byteOrder = order.getByteOrder();
 				
 		switch (type) {
@@ -353,6 +415,7 @@ public class Struct {
 				return bytes;
 			case String:
 				String string = new String(bytes, charset);
+				if(trim) string = string.trim();
 				return string;
 			case Byte:
 				return bytes[0];
@@ -396,7 +459,7 @@ public class Struct {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Struct other = (Struct) obj;
+		Struct<?> other = (Struct<?>) obj;
 		if (byteOrder == null) {
 			if (other.byteOrder != null)
 				return false;
@@ -417,82 +480,5 @@ public class Struct {
 
 	 
 	
-	/*	public static Format createFormat(String fmt) {
-			return createFormat(fmt, null);
-		}
-	
-		public static Format createFormat(String fmt, Charset cs) {
-			Format format = new Format(null, cs);
-			Character x = null;
-			StringBuilder buf = new StringBuilder();
-			for (int i = 0; i < fmt.length(); i++) {
-				x = fmt.charAt(i);
-				if (BYTE_ORDER_MAP.keySet().contains(x)) {
-					format.byteOrder = BYTE_ORDER_MAP.get(x);
-				} else if (Character.isDigit(x)) {
-					buf.append(x);
-				} else {
-					TokenType type = TokenType.valueOf(x.toString());
-					int multiplier = 1;
-					if (buf.length() > 0) {
-						multiplier = Integer.valueOf(buf.toString());
-						if(multiplier<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
-						buf.setLength(0);
-					}
-					format.appendToken(type, multiplier);
-				}
-			}
-	
-			return format;
-		}
-	*/
-	/*public static class Format {
-		protected List<Token> tokens = new ArrayList<Struct.Token>();
-		protected ByteOrder byteOrder;
-		protected Charset charset;
-	
-		public Format() {
-		}
-	
-		public Format(ByteOrder byteOrder, Charset charset) {
-			super();
-			this.byteOrder = byteOrder != null ? byteOrder : ByteOrder.nativeOrder();
-			this.charset = charset != null ? charset : Charset.defaultCharset();
-		}
-	
-		public void appendToken(Token t) {
-			tokens.add(t);
-		}
-	
-		public void appendToken(TokenType type, int count) {
-			appendToken(new Token(type, count));
-		}
-	
-		public int byteCount() {
-			int size = 0;
-			for (Token t : tokens)
-				size += t.byteCount();
-			return size;
-		}
-		
-		public int tokenCount() {
-			int count = 0;
-			for (Token t : tokens)
-				count += t.tokenCount();
-			return count;
-		}
-	
-		@Override
-		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			builder.append("[byteOrder=");
-			builder.append(byteOrder);
-			builder.append(", tokens=");
-			builder.append(tokens);
-			builder.append("]");
-			return builder.toString();
-		}
-	
-	}*/
 	
 }
