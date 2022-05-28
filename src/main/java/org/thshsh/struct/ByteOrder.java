@@ -15,6 +15,12 @@ public enum ByteOrder {
 	}
 	
 	public static ByteOrder nativeOrder() {
-		return java.nio.ByteOrder.nativeOrder() == java.nio.ByteOrder.LITTLE_ENDIAN ? ByteOrder.Little : ByteOrder.Big;
+		return java.nio.ByteOrder.nativeOrder() == java.nio.ByteOrder.LITTLE_ENDIAN ? Little : Big;
+	}
+	
+	public static ByteOrder valueOf(java.nio.ByteOrder bo) {
+		if(bo == java.nio.ByteOrder.LITTLE_ENDIAN ) return Little;
+		else return Big;
+		
 	}
 }
