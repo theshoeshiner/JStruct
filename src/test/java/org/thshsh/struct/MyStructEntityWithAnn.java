@@ -2,7 +2,7 @@ package org.thshsh.struct;
 
 import java.util.Arrays;
 
-@StructEntity(byteOrder = ByteOrder.Big,charset = "UTF-8",trimAndPad = true)
+@StructEntity(byteOrder = ByteOrder.Big,charset = "UTF-8",trimAndPad = true,prefix = 3,suffix = 7)
 public class MyStructEntityWithAnn {
 
 	@StructToken(order = 0,length=3)

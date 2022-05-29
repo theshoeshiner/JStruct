@@ -152,7 +152,7 @@ public class StructTest {
 	
 	@Test
 	public void testEntity() {
-		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(mea);
 	}
 	
@@ -170,32 +170,32 @@ public class StructTest {
 		byte[] packed = Struct.create(MyEntityWithPrefixAndSuffix.class).packEntity(mea);
 		MyEntityWithPrefixAndSuffix unpacked = Struct.create(MyEntityWithPrefixAndSuffix.class).unpackEntity(packed);
 		
-		MyStructEntity original = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		MyStructEntityParent original = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		Assertions.assertTrue(unpacked.equalsOriginal(original));
 	}
 	
 	@Test
 	public void testGeneric() throws IOException {
-		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct<MyStructEntity> s = Struct.create(MyStructEntity.class);
+		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<MyStructEntityParent> s = Struct.create(MyStructEntityParent.class);
 		byte[] bytes =s.packEntity(mea);
-		MyStructEntity unpacked = s.unpackEntity(bytes);
+		MyStructEntityParent unpacked = s.unpackEntity(bytes);
 		Assertions.assertTrue(unpacked.equals(mea));
 	}
 	
 	@Test
 	public void testEntityWrongLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			MyStructEntity mea = new MyStructEntity("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-			Struct.create(MyStructEntity.class).packEntity(mea);
+			MyStructEntityParent mea = new MyStructEntityParent("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+			Struct.create(MyStructEntityParent.class).packEntity(mea);
 		});
 	}
 	
 	@Test
 	public void testDuplicateEntity() {
 		//make sure we can unpack objects of different types as long as the struct configs are the same
-		MyStructEntity mea = new MyStructEntity("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct<MyStructEntity> s = Struct.create(MyStructEntity.class);
+		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<MyStructEntityParent> s = Struct.create(MyStructEntityParent.class);
 		byte[] bytes = s.packEntity(mea);
 		MyStructEntityCopy copy = s.unpackEntity(MyStructEntityCopy.class, bytes);
 		Assertions.assertTrue(copy.equalsOriginal(mea));
@@ -206,8 +206,11 @@ public class StructTest {
 		MyStructEntityWithAnn mea = new MyStructEntityWithAnn("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		StructEntity sc = MyStructEntityWithAnn.class.getAnnotation(StructEntity.class);
 		Struct<MyStructEntityWithAnn> s = Struct.create(MyStructEntityWithAnn.class);
+		
 		Assertions.assertEquals(s.byteOrder,sc.byteOrder());
 		Assertions.assertEquals(s.charset.name(),sc.charset());
+		Assertions.assertEquals(13,s.tokenCount());
+		
 		byte[] bytes = s.packEntity(mea);
 		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
 		Assertions.assertTrue(copy.equals(mea));
@@ -220,9 +223,7 @@ public class StructTest {
 		byte[] bytes = s.packEntity(mea);
 		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
 		Assertions.assertEquals(copy.myString, "ab");
-		
 		bytes = s.packEntity(copy);
-		
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
 			s.trimAndPad(false);
 			s.packEntity(copy);

@@ -218,8 +218,8 @@ public class MyEntityWithPrefixAndSuffix {
 		return true;
 	}
 	
-	public boolean equalsOriginal(MyStructEntity obj) {
-		MyStructEntity other = (MyStructEntity) obj;
+	public boolean equalsOriginal(MyStructEntityParent obj) {
+		MyStructEntityParent other = (MyStructEntityParent) obj;
 		if (myBoolean == null) {
 			if (other.myBoolean != null)
 				return false;

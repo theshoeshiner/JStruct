@@ -138,6 +138,14 @@ public class Struct<T> {
 			List<Object> values = this.unpack(bytes);
 			V instance = c.newInstance();
 			
+			if(config.prefix() > 0) {
+				values.remove(0);
+			}
+			
+			if(config.suffix() > 0) {
+				values.remove(values.size()-1);
+			}			
+			
 			for(int i=0;i<values.size();i++) {
 				Mapping field = config.mappings.get(i);
 				Object value = values.get(i);
@@ -148,6 +156,8 @@ public class Struct<T> {
 					field.field.set(instance, value);
 				}
 			}
+			
+			
 			
 			return instance;
 		} 
@@ -165,6 +175,11 @@ public class Struct<T> {
 			config.validate(this);
 			
 			List<Object> values = new ArrayList<Object>();
+			
+			if(config.prefix()>0) {
+				values.add(new byte[config.prefix()]);
+			}
+			
 			for(Mapping mapping : config.mappings) {
 				Object value;
 				if(mapping.property != null) {
@@ -174,6 +189,10 @@ public class Struct<T> {
 					value = mapping.field.get(o);
 				}
 				values.add(value);
+			}
+			
+			if(config.suffix()>0) {
+				values.add(new byte[config.suffix()]);
 			}
 									
 			return this.pack(values);

@@ -2,7 +2,7 @@ package org.thshsh.struct;
 
 import java.util.Arrays;
 
-public class MyStructEntity {
+public class MyStructEntityParent {
 
 	@StructToken(order = 0,length=3)
 	public String myString;
@@ -27,10 +27,10 @@ public class MyStructEntity {
 	@StructToken(type=TokenType.LongUnsigned, order = 11)
 	public Long myLongUnsigned;
 	
-	public MyStructEntity() {}
+	public MyStructEntityParent() {}
 	
 
-	public MyStructEntity(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
+	public MyStructEntityParent(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
 			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
 		super();
 		this.myString = myString;
@@ -185,7 +185,7 @@ public class MyStructEntity {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MyStructEntity other = (MyStructEntity) obj;
+		MyStructEntityParent other = (MyStructEntityParent) obj;
 		if (myBoolean == null) {
 			if (other.myBoolean != null)
 				return false;

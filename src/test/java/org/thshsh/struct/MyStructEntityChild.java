@@ -1,6 +1,6 @@
 package org.thshsh.struct;
 
-public class MyStructEntityChild extends MyStructEntity {
+public class MyStructEntityChild extends MyStructEntityParent {
 	
 	@StructToken(order = 10,length=8)
 	public String myChildString;

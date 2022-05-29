@@ -27,5 +27,13 @@ public @interface StructEntity {
 	 */
 	boolean trimAndPad() default false;
 	
+	/**
+	 * Padding on end of struct
+	 * @return
+	 */
+	int suffix() default 0;
+	
+	int prefix() default 0;
+	
 	
 }

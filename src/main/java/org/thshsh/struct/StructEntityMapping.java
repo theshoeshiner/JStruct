@@ -44,7 +44,13 @@ public class StructEntityMapping<T> {
 		return createStruct(this);
 	}
 	
+	public int prefix() {
+		return classAnnotation!=null?classAnnotation.prefix():0;
+	}
 	
+	public int suffix() {
+		return classAnnotation!=null?classAnnotation.suffix():0;
+	}
 	
 	public void validate(Struct<?> struct) {
 		if(!this.struct.tokens.equals(struct.tokens)) {
@@ -132,8 +138,16 @@ public class StructEntityMapping<T> {
 	
 	public static <T> Struct<T> createStruct(StructEntityMapping<T> config) {
 		Struct<T> s = new Struct<T>();
-		s.entityClass = config.structClass;
+		s.entityClass = config.structClass;		
+		
 		if(config.classAnnotation!=null) {
+			
+			if(config.classAnnotation.prefix() > 0) {
+				LOGGER.info("appending prefix token");
+				Token t = new Token(TokenType.Bytes,1, config.classAnnotation.prefix(),0,0);
+				s.appendToken(t);
+			}
+			
 			if(StringUtils.isNotBlank(config.classAnnotation.charset())){
 				s.charset = Charset.forName(config.classAnnotation.charset());
 			}
@@ -151,6 +165,14 @@ public class StructEntityMapping<T> {
 			Token t = new Token(tt,st.count(), st.length(),st.prefix(),st.suffix());
 			s.appendToken(t);
 		}
+		
+		if(config.classAnnotation!=null && config.classAnnotation.suffix() > 0) {
+			LOGGER.info("appending suffix token");
+			Token t = new Token(TokenType.Bytes,1, config.classAnnotation.suffix(),0,0);
+			s.appendToken(t);
+		}
+		
+		LOGGER.info("tokens: {}",s.tokenCount());
 		
 		return s;
 	}

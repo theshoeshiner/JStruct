@@ -185,7 +185,7 @@ public class MyStructEntityCopy {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MyStructEntity other = (MyStructEntity) obj;
+		MyStructEntityParent other = (MyStructEntityParent) obj;
 		if (myBoolean == null) {
 			if (other.myBoolean != null)
 				return false;
@@ -241,8 +241,8 @@ public class MyStructEntityCopy {
 		return true;
 	}
 	
-	public boolean equalsOriginal(MyStructEntity obj) {
-		MyStructEntity other = (MyStructEntity) obj;
+	public boolean equalsOriginal(MyStructEntityParent obj) {
+		MyStructEntityParent other = (MyStructEntityParent) obj;
 		if (myBoolean == null) {
 			if (other.myBoolean != null)
 				return false;
