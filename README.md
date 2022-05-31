@@ -23,7 +23,7 @@ Structs can be created via format strings (similar to the python library) or by 
 
 ## Format Strings
 
-Format strings can use any of the characters specified [below](#tokens).
+Format strings can use any of the characters specified [here](#tokens).
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -48,7 +48,7 @@ The output array of the above code is:
 
 ``7fff80007fffffff800000007fffffffffffffff80000000000000007fefffffffffffff00000000000000010406020c4142434445``
 
-This library correctly types the output tokens where possible, but some tokens must be up-cast to allow them to correctly represent unsigned values. You must use the types specified [below](#tokens) when passing in tokens to be packed.
+This library correctly types the output tokens where possible, but some tokens must be up-cast to allow them to correctly represent unsigned values. You must use the types specified [here](#tokens) when passing in tokens to be packed.
 
 
 See the StructTest.java file for more examples.
@@ -67,7 +67,7 @@ Inheritance is supported as long as field ordering and typing is still valid.
 * The ``unsigned`` property defaults to false. Signed types will always be selected unless this is set to true. But remember that unsigned types are represented by the next larger type. e.g. Unsigned Short = Integer, Unsigned Integer = Long.
 * The ``length`` property is optional and only valid for ``String`` and ``byte[]`` types.
 * The ``prefix`` and ``suffix`` properties tell the Struct to ignore a specified number of empty bytes before or after the token.
-* The ``constant`` property allows you specify a constant string to be used for the token. This String will be used regardless of the value of the POJO field, and will be validated during unpacking such that the unpacking *will fail* if the data does not match the constant. Fields for constant tokens do not need to be public. The length property is not required when constant is specified as it will be derived from the constant.
+* The ``constant`` property allows you specify a constant string to be used for the token. This value will be used regardless of the value of the POJO field, and will be validated during unpacking such that the unpacking *will fail* if the data does not match the constant. Fields for constant tokens do not need to be public. The length property is not required when constant is specified as it will be derived from the constant. The constant can be used on most numeric fields as well, and the string will be converted to the numeric type via valueOf methods. It cannot be used with the Bytes or LongUnsigned types as there is no easy conversion from a String to those types.
 
 Example usage:
 
