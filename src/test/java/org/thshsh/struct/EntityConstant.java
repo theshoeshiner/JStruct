@@ -8,6 +8,12 @@ public class EntityConstant extends EntityEverything {
 	
 	@StructToken(order = 12,constant = CONSTANT)
 	public String myConstant;
+	
+	@StructToken(order = 13,constant = "12345")
+	public Integer myIntegerConstant;
+	
+	@StructToken(order = 14,constant = Long.MAX_VALUE+"")
+	public Long myLongConstant;
 
 	public EntityConstant() {
 		super();

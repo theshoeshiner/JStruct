@@ -26,19 +26,19 @@ public class Token {
 		this(type,type.array?1:countOrLength,type.array?countOrLength:0,0,0,null);
 	}
 
-	public Token(TokenType type, int count, int l, int p, int s,Object constant) {
+	public Token(TokenType type, int count, int len, int pre, int suf,Object constant) {
 		super();
 		this.type = type;
-		if(!type.array && l > 0) throw new IllegalArgumentException("Length cannot be specified for Struct Token type: "+type);
+		if(!type.array && len > 0) throw new MappingException("Length cannot be specified for Struct Token type: "+type);
 		if(type.array) {
-			this.length = l;
+			this.length = len;
 		}
 		else this.length = type.size;
 		this.count = count;
 		if (count == 0)
-			throw new IllegalArgumentException("Count cannot be zero");
-		this.prefix = p;
-		this.suffix = s;
+			throw new MappingException("Count cannot be zero");
+		this.prefix = pre;
+		this.suffix = suf;
 		this.constant = constant;
 		
 		byteCount = count * length + prefix + suffix;

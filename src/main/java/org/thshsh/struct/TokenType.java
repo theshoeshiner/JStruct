@@ -1,6 +1,7 @@
 package org.thshsh.struct;
 
 import java.lang.reflect.Field;
+import java.util.function.Function;
 
 /**
  * i and l are the same q and Q are treated the same because we cannot represent
@@ -11,20 +12,20 @@ import java.lang.reflect.Field;
 public enum TokenType {
 
 	//this order matters, because TokenType.Auto will find the signed types first
-	Short(2,false,"h",Short.class),
-	Integer(4,false,"il",Integer.class),
-	Long(8,false,"q",Long.class),
+	Short(2,false,"h",Short.class,java.lang.Short::valueOf),
+	Integer(4,false,"il",Integer.class,java.lang.Integer::valueOf),
+	Long(8,false,"q",Long.class,java.lang.Long::valueOf),
 	
-	ShortUnsigned(2,false,"H",true,Integer.class),
-	IntegerUnsigned(4,false,"I",true,Long.class),
-	LongUnsigned(8,false,"Q",true,Long.class),
+	ShortUnsigned(2,false,"H",true,Integer.class,java.lang.Integer::valueOf),
+	IntegerUnsigned(4,false,"I",true,Long.class,java.lang.Long::valueOf),
+	LongUnsigned(8,false,"Q",true,Long.class,null),
 	
-	Double(8,false,"d",Double.class),
-	Bytes(1,true,"s",byte[].class),
-	Byte(1,false,"cb",Byte.class),
-	String(1,true,"S",String.class),
-	Boolean(1,false,"t",Boolean.class),
-	Auto(1,false,"a",null)
+	Double(8,false,"d",Double.class,java.lang.Double::valueOf),
+	Bytes(1,true,"s",byte[].class,null),
+	Byte(1,false,"cb",Byte.class,java.lang.Byte::valueOf),
+	String(1,true,"S",String.class,java.lang.String::valueOf),
+	Boolean(1,false,"t",Boolean.class,java.lang.Boolean::valueOf),
+	Auto(1,false,"a",null,null)
 	;
 
 	//size in bytes of this token type
@@ -33,17 +34,21 @@ public enum TokenType {
 	String characters;
 	Class<?> defaultClass;
 	boolean unsigned;
+	Function<String, ?> convert;
 	
-	private TokenType(int size,boolean ar,String chars,Class<?> defaultClass) {
-		this(size,ar,chars,false,defaultClass);
+	private TokenType(int size,boolean ar,String chars,Class<?> defaultClass,Function<String, ?> convert) {
+		this(size,ar,chars,false,defaultClass,convert);
 	}
 
-	private TokenType(int size,boolean ar,String chars,boolean unsigned,Class<?> defaultClass) {
+	private TokenType(int size,boolean ar,String chars,boolean unsigned,Class<?> defaultClass,Function<String, ?> convert) {
 		this.size = size;
 		this.array = ar;
 		this.defaultClass = defaultClass;
 		this.characters = chars;
 		this.unsigned = unsigned;
+		this.convert = convert;
+		
+		
 	}
 	
 	public static TokenType fromCharacter(char c) {

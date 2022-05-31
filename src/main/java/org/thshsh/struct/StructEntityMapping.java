@@ -58,7 +58,7 @@ public class StructEntityMapping<T> {
 	public void validate(Struct<?> struct) {
 		if(!this.struct.tokens.equals(struct.tokens)) {
 			LOGGER.error("struct tokens: {} do not match class tokens: {}",struct.tokens,this.struct.tokens);
-			throw new IllegalArgumentException("Object does not match this struct");
+			throw new CountMismatchException(struct.tokens.size(), this.struct.tokens.size());
 		}
 	}
 	
@@ -96,7 +96,7 @@ public class StructEntityMapping<T> {
 					catch (IntrospectionException e) {
 						
 						if(!Modifier.isPublic(field.getModifiers()) && StringUtils.isEmpty(annotation.constant())) {
-							throw new IllegalArgumentException("Field "+field.getName()+" has no property accessors and is not public or a constant");
+							throw new MappingException("Field "+field.getName()+" has no property accessors and is not public or a constant",e);
 						}
 						else {
 							Mapping mapping = new Mapping(null,field, annotation,field.getType());
@@ -109,11 +109,11 @@ public class StructEntityMapping<T> {
 		}
 		while(search != null);
 		
-		if(properties.size()==0) throw new IllegalArgumentException("No Struct properties found on class "+structClass.getCanonicalName());
+		if(properties.size()==0) throw new MappingException("No Struct properties found on class "+structClass.getCanonicalName());
 		Set<Integer> orders = new HashSet<>();
 		for(Mapping m : properties) {
 			Integer i = m.annotation.order();
-			if(orders.contains(i)) throw new IllegalArgumentException("Found two StructTokens at index "+i+" for entity "+structClass);
+			if(orders.contains(i)) throw new MappingException("Found two StructTokens at index "+i+" for entity "+structClass);
 			orders.add(i);
 		}
 		properties.sort((f0,f1)-> {
@@ -131,18 +131,31 @@ public class StructEntityMapping<T> {
 		protected Field field;
 		protected StructToken annotation;
 		protected Class<?> type;
+		protected Object constantValue;
+		protected TokenType tokenType;
+		
 		public Mapping(PropertyDescriptor property, Field f,StructToken annotation, Class<?> type) {
 			super();
 			this.field = f;
 			this.property = property;
 			this.annotation = annotation;
 			this.type = type;
+			this.tokenType = annotation.type() != TokenType.Auto?annotation.type():TokenType.fromClass(type, false);
+
+			if(StringUtils.isNotEmpty(annotation.constant())) {
+				LOGGER.info("constant was: {}",annotation.constant());
+				if(tokenType.convert == null) throw new MappingException("Cannot specify a constant for TokenType "+tokenType);
+				else {
+					constantValue = tokenType.convert.apply(annotation.constant());
+					LOGGER.info("converted constant to: {} = {}",constantValue.getClass(),constantValue);
+				}
+			}
 		}
 		public void setValue(Object instance, Object value) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 			if(isConstant()) {
 				//confirm constant has correct value
-				String constant = annotation.constant();
-				if(!constant.equals(value)) throw new IllegalArgumentException("Value: '"+value+"' does not match specified constant: '"+constant+"'");
+				//Object constant = constantValue;
+				if(!constantValue.equals(value)) throw new MappingException("Value: '"+value+"' does not match specified constant: '"+constantValue+"'");
 			}
 			else {
 				if(property != null) {
@@ -155,14 +168,14 @@ public class StructEntityMapping<T> {
 		}
 		public Object getValue(Object o) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 			if(isConstant())
-				return annotation.constant();
+				return constantValue;
 			else if(property != null) 
 				return PropertyUtils.getSimpleProperty(o, property.getName());
 			else 
 				return field.get(o);
 		}
 		public boolean isConstant() {
-			return StringUtils.isNotEmpty(annotation.constant());
+			return constantValue != null;
 		}
 	}
 	
@@ -193,13 +206,10 @@ public class StructEntityMapping<T> {
 	
 		for(Mapping mapping : config.mappings) {
 			StructToken st = mapping.annotation;
-			Object constant = mapping.isConstant()?st.constant():null;
-			int length = mapping.isConstant()?st.constant().length():st.length();
-			TokenType tt = st.type();
-			if(st.type() == TokenType.Auto) {
-				tt = TokenType.fromClass(mapping.type, false);
-			}
-			Token t = new Token(tt,st.count(), length,st.prefix(),st.suffix(),constant);
+			TokenType tt = mapping.tokenType;
+			Object constantValue = mapping.constantValue;
+			int length = tt.array? ( mapping.isConstant()?st.constant().length():st.length()) : 0;
+			Token t = new Token(tt,st.count(), length,st.prefix(),st.suffix(),constantValue);
 			s.appendToken(t);
 		}
 		

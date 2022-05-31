@@ -105,18 +105,12 @@ public class StructTest {
 	
 	@Test()
 	public void testInvalidCount() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(ZeroCountException.class, () -> {
 			Struct.create(">0S");
 		});
 	}
 	
-	@Test()
-	public void testInvalidLength() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			Struct.create(EntityInvalidLength.class);
-		});
-	}
-	
+
 	@Test()
 	public void testPublicFields() {
 		StructWithPublicFields i = new StructWithPublicFields();
@@ -126,14 +120,14 @@ public class StructTest {
 	
 	@Test()
 	public void testPrivateFields() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(MappingException.class, () -> {
 			Struct.create(StructWithPrivateFields.class);
 		});
 	}
 	
 	@Test()
 	public void testWrongLength() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(LengthMismatchException.class, () -> {
 			Struct s = Struct.create("2S");
 			s.pack("ab");
 			s.pack("abc");
@@ -157,7 +151,7 @@ public class StructTest {
 	
 	@Test
 	public void testCollision() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(MappingException.class, () -> {
 			Struct.create(EntityOrderCollision.class);
 		});
 	}
@@ -165,10 +159,9 @@ public class StructTest {
 	@Test
 	public void testConstant() {
 		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		entity.myConstant = EntityConstant.CONSTANT;
 		testObjectInputAllOrders(entity);
 		
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(ByteMismatchException.class, () -> {
 			byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
 			Struct.create(EntityConstant2.class).unpackEntity(packed);
 		});
@@ -203,7 +196,7 @@ public class StructTest {
 	
 	@Test
 	public void testEntityWrongLength() {
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(LengthMismatchException.class, () -> {
 			EntityEverything mea = new EntityEverything("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 			Struct.create(EntityEverything.class).packEntity(mea);
 		});
@@ -242,7 +235,7 @@ public class StructTest {
 		EntityAnnotation copy = s.unpackEntity(EntityAnnotation.class, bytes);
 		Assertions.assertEquals(copy.myString, "ab");
 		bytes = s.packEntity(copy);
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+		Assertions.assertThrows(LengthMismatchException.class, () -> {
 			s.trimAndPad(false);
 			s.packEntity(copy);
 		});

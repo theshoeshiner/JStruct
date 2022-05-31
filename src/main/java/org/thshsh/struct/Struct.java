@@ -156,7 +156,7 @@ public class Struct<T> {
 			return instance;
 		} 
 		catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			throw new IllegalArgumentException("Cannot unpack class",e);
+			throw new MappingException(c,e);
 		}
 				
 	}
@@ -186,7 +186,7 @@ public class Struct<T> {
 			return this.pack(values);
 		} 
 		catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			throw new IllegalArgumentException("Cannot pack class",e);
+			throw new MappingException(o.getClass(),e);
 		} 
 		
 	}
@@ -199,7 +199,7 @@ public class Struct<T> {
 	public byte[] pack(List<Object> vals) {
 
 		int tokenCount = tokenCount();
-		if (tokenCount != vals.size())throw new IllegalArgumentException("format tokens: " + tokenCount + " does not equal value tokens: " + vals.size());
+		if (tokenCount != vals.size())throw new CountMismatchException( tokenCount , vals.size());
 
 		byte[] result = new byte[byteCount()];
 
@@ -246,7 +246,7 @@ public class Struct<T> {
 					case String:
 						String string = (String) val;
 						if(string.length() != token.length) {
-							if(!trimAndPad || token.isConstant()) throw new IllegalArgumentException("Expected String of length "+token.length+" but recieved "+string.length());
+							if(!trimAndPad || token.isConstant()) throw new LengthMismatchException(token.length,string.length());
 							else string = StringUtils.rightPad(string, token.length);
 						}
 						packedBytes = (string).getBytes(this.charset);
@@ -262,7 +262,7 @@ public class Struct<T> {
 
 				}
 				
-				if(packedBytes.length != length) throw new IllegalArgumentException("Expected "+length +" bytes but found "+packedBytes.length+" for value "+val);
+				if(packedBytes.length != length) throw new LengthMismatchException(length ,packedBytes.length,val);
 				
 
 				System.arraycopy(packedBytes, 0, result, position, packedBytes.length);
@@ -295,7 +295,7 @@ public class Struct<T> {
 		
 		int len = format.byteCount();
 
-		if (len != vals.length) throw new IllegalArgumentException("format length: " + len + " does not equal value length: " + vals.length);
+		if (len != vals.length) throw new ByteMismatchException(len , vals.length);
 
 		List<Object> tokens = new ArrayList<Object>();
 
@@ -327,7 +327,7 @@ public class Struct<T> {
 		} 
 		catch (IOException e) {
 			//We can catch this IO exception because it's unlikely since we're working with in memory bytes
-			throw new IllegalStateException(e);
+			throw new IllegalStateException("Exception reading in memory byte array",e);
 		}
 
 		
@@ -359,7 +359,7 @@ public class Struct<T> {
 				int countOrLength = 1;
 				if (countOrLengthBuffer.length() > 0) {
 					countOrLength = Integer.valueOf(countOrLengthBuffer.toString());
-					if(countOrLength<1) throw new IllegalArgumentException("Count for token "+type+" must be > 0");
+					if(countOrLength<1) throw new ZeroCountException();
 					countOrLengthBuffer.setLength(0);
 				}
 				format.appendToken(type, countOrLength);
