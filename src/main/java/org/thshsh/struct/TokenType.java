@@ -6,7 +6,6 @@ import java.lang.reflect.Field;
  * i and l are the same q and Q are treated the same because we cannot represent
  * an unsigned long
  * 
- * @author daniel.watson
  *
  */
 public enum TokenType {

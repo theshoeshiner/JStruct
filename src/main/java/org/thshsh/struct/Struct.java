@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -119,7 +118,7 @@ public class Struct<T> {
 		return unpackEntity(entityClass, stream);
 	}
 	
-	public T unpackEntity(byte[] bytes) throws IOException {
+	public T unpackEntity(byte[] bytes) {
 		return unpackEntity(entityClass, bytes);
 	}
 	
@@ -147,14 +146,9 @@ public class Struct<T> {
 			}			
 			
 			for(int i=0;i<values.size();i++) {
-				Mapping field = config.mappings.get(i);
+				Mapping mapping = config.mappings.get(i);
 				Object value = values.get(i);
-				if(field.property != null) {
-					PropertyUtils.setSimpleProperty(instance, field.property.getName(), value);
-				}
-				else {
-					field.field.set(instance, value);
-				}
+				mapping.setValue(instance, value);
 			}
 			
 			
@@ -181,13 +175,7 @@ public class Struct<T> {
 			}
 			
 			for(Mapping mapping : config.mappings) {
-				Object value;
-				if(mapping.property != null) {
-					value = PropertyUtils.getSimpleProperty(o, mapping.property.getName());
-				}
-				else {
-					value = mapping.field.get(o);
-				}
+				Object value = mapping.getValue(o);
 				values.add(value);
 			}
 			
@@ -258,7 +246,7 @@ public class Struct<T> {
 					case String:
 						String string = (String) val;
 						if(string.length() != token.length) {
-							if(!trimAndPad) throw new IllegalArgumentException("Expected String of length "+token.length+" but recieved "+string.length());
+							if(!trimAndPad || token.isConstant()) throw new IllegalArgumentException("Expected String of length "+token.length+" but recieved "+string.length());
 							else string = StringUtils.rightPad(string, token.length);
 						}
 						packedBytes = (string).getBytes(this.charset);
@@ -314,9 +302,10 @@ public class Struct<T> {
 		//reuse arrays when possible
 		byte[][] arrays = new byte[][] {null,new byte[1],new byte[2],null,new byte[4],null,null,null,new byte[8]};
 
+	
+		ByteArrayInputStream bs = new ByteArrayInputStream(vals);
+		
 		try {
-			ByteArrayInputStream bs = new ByteArrayInputStream(vals);
-			
 			for (Token token : format.tokens) {
 
 				IOUtils.readFully(bs, token.prefix);
@@ -324,7 +313,9 @@ public class Struct<T> {
 				count: for (int i = 0; i < token.tokenCount(); i++) {
 					
 					byte[] ar = token.type.array?new byte[token.length]:arrays[token.type.size];
-					Object o = unpack(token.type,  byteOrder, charset, ar,bs,this.trimAndPad);
+					//dont trim constants
+					boolean trim = token.isConstant()?false:this.trimAndPad;
+					Object o = unpack(token.type,  byteOrder, charset, ar,bs,trim);
 					tokens.add(o);
 					if(token.type.array) break count;
 
@@ -333,10 +324,13 @@ public class Struct<T> {
 				IOUtils.readFully(bs, token.suffix);
 
 			}
-
-		} catch (IOException e) {
+		} 
+		catch (IOException e) {
+			//We can catch this IO exception because it's unlikely since we're working with in memory bytes
 			throw new IllegalStateException(e);
 		}
+
+		
 
 		return tokens;
 

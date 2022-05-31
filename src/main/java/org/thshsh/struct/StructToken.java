@@ -16,5 +16,6 @@ public @interface StructToken {
 	boolean unsigned() default false;
 	int prefix() default 0;
 	int suffix() default 0;
+	String constant() default "";
 	
 }

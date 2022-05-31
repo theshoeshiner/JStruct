@@ -19,12 +19,14 @@ public class Token {
 	protected int prefix;
 	//suffix to ignore
 	protected int suffix;
+	//constant value to use
+	protected Object constant;
 	
 	public Token(TokenType type, int countOrLength) {
-		this(type,type.array?1:countOrLength,type.array?countOrLength:0,0,0);
+		this(type,type.array?1:countOrLength,type.array?countOrLength:0,0,0,null);
 	}
 
-	public Token(TokenType type, int count, int l, int p, int s) {
+	public Token(TokenType type, int count, int l, int p, int s,Object constant) {
 		super();
 		this.type = type;
 		if(!type.array && l > 0) throw new IllegalArgumentException("Length cannot be specified for Struct Token type: "+type);
@@ -37,6 +39,7 @@ public class Token {
 			throw new IllegalArgumentException("Count cannot be zero");
 		this.prefix = p;
 		this.suffix = s;
+		this.constant = constant;
 		
 		byteCount = count * length + prefix + suffix;
 		
@@ -60,6 +63,10 @@ public class Token {
 	
 	public int byteCount() {
 		return byteCount;
+	}
+	
+	public boolean isConstant() {
+		return constant != null;
 	}
 
 	@Override
