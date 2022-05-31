@@ -109,6 +109,8 @@ Example usage:
 	public Long myLongUnsigned;
 ```
 
+When using the Annotations the POJOs must be packed/unpacked using the ``Struct.packEntity`` and ``Struct.unpackEntity`` methods.
+
 The ``@StructEntity`` Annotation can be used to further customize the packing process. It has 5 properties which can be specified...
 
 * The ``byteOrder`` property is used to specify the Byte Order used for packing the entity.
