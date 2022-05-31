@@ -1,6 +1,8 @@
 # JStruct
 The python struct library's port to java for reading and writing binary data as in python. Based off the code found here: https://github.com/ronniebasak/JStruct with non backwards compatible changes to support strong typing, strings, and byte arrays.
 
+In addition there are now annotations to map Java POJOs to struct tokens. Once mapped the POJOs can be packed and unpacked without having to manually create the Struct format.
+
 ## Classes
 The Struct class contains static methods for constructing a reuseable Struct object from a format string
 
@@ -15,7 +17,7 @@ To use this, add the maven dependency:
 	</dependency>
 ```
 
-And the code can be used as follows...
+Structs can be created from format strings (similar to the python library)...
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -53,6 +55,10 @@ See the StructTest.java file for more examples.
   * ``!`` : Network byte order, same as >
 
   The following token specifiers are supported:
+  
+  | Tokens | Meaning | Size | Type |
+  | --- | --- | --- | ---|
+  
   * ``h  `` : Signed Short (2 bytes) - java.lang.Short
   * ``H`` : Unsigned Short (2 bytes) - java.lang.Integer
   * ``i|l`` : Signed Integer (4 bytes) - java.lang.Integer
@@ -63,6 +69,9 @@ See the StructTest.java file for more examples.
   * ``s`` : Byte Array - java.lang.Byte[]
   * ``c|b`` : Byte - java.lang.Byte
   * ``S`` : String - java.lang.String
+  * ``t`` : Boolean - (1 byte) java.lang.Boolean
+  
+  
   
 Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the length of the array / characters in the string. For all other token types it specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
