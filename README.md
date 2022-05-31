@@ -60,13 +60,13 @@ See the StructTest.java file for more examples.
   | --- | --- | --- | ---|
   | ``h  `` | Signed Short | 2 | java.lang.Short
   | ``H`` | Unsigned Short | 2 | java.lang.Integer
-  | ``i|l`` | Signed Integer | 4 | java.lang.Integer
+  | ``i\|l`` | Signed Integer | 4 | java.lang.Integer
   | ``I`` | Unsigned Integer | 4 | java.lang.Long
   | ``q`` | Signed Long | 8 | java.lang.Long
   | ``Q`` | Unsigned Long | 8 | java.lang.Long
   | ``d`` | Floating Point Double | 8 | java.lang.Double
   | ``s`` | Byte Array | * | java.lang.Byte[]
-  | ``c|b`` | Byte | 1 | java.lang.Byte
+  | ``c\|b`` | Byte | 1 | java.lang.Byte
   | ``S`` | String | * | java.lang.String
   | ``t`` | Boolean | 1 | java.lang.Boolean
   
@@ -88,19 +88,23 @@ Because java cannot represent an unsigned 8 byte integer with a primitive, the u
 BigInteger bi = new BigInteger(Long.toUnsignedString(n));
 ```
 
-##Annotations (beta)
+## Annotations (beta)
 
 POJO classes can be packed and unpacked using Annotations. Simply annotate each field you want included in the struct with  ``@StructToken``. The core advantage of using the annotations is that you can work with typed objects and named fields instead of a generic ``List<Object>``. The core disadvantage is that you cannot dynamically create the Struct, it is tied to the annotations in the code. You *can* however generate a Struct based on annotations and then *customize* the returned Struct object at runtime. However this will not alter how the annotated entity is packed and unpacked, so most changes to the Struct will make it incompatible with the original entity.
 
-* The ``order`` property is required, because field order is not consistently preserved during compilation. 
-* The ``type`` property is optional, and the types listed above are used to detect the proper type. The only exception is the unsigned long type, which must be manually specified (see example below).
+* The ``order`` property is required, because field order is not consistently preserved during compilation. Tokens are sorted on this value. Negative values and zero are allowed. These values should be unique.
+* The ``type`` property is optional, and the types listed above are used to detect the proper type. The only exception is the unsigned long type, which must be manually specified because it conflicts with the unsigned Integer type (see example below).
 * The ``unsigned`` property defaults to false. Signed types will always be selected unless this is set to true.
 * The ``length`` property is optional and only valid for ``String`` and ``byte[]`` types. Currently there is no way to map tokens to a List.
-* The ``prefix`` and ``suffix`` properties tell the Struct to ignore a certain number of bytes before or after the token.
+* The ``prefix`` and ``suffix`` properties tell the Struct to ignore a specified number of bytes before or after the token.
+* The ``constant`` property allows you specify a constant string to be used for the token. This String will be used regardless of the value of the POJO field, and will be validated during unpacking such that the unpacking *will fail* if the constant does not match. Fields for constant tokens do not need to be public. Length property is not required when constant is specified.
 
 Example usage:
 
 ```
+	@StructToken(order = -1,constant="MYSTRUCTHEADER")
+	protected String alwaysPresentHeader;
+
 	@StructToken(order = 0,length=3)
 	public String myString;
 	
@@ -135,4 +139,9 @@ Example usage:
 	public Long myLongUnsigned;
 ```
 
-The ``@StructEntity`` Annotation can be used to further customize the packing process.
+The ``@StructEntity`` Annotation can be used to further customize the packing process. It has 5 properties which can be specified...
+
+* The ``byteOrder`` property is used to specify the Byte Order used for packing the entity.
+* The ``charset`` property is used to specify the name of the Charset to be used for unpacking Strings.
+* The ``trimAndPad`` property can be used to enable trimming and padding of byte[] and String tokens.
+* The ``prefix`` and ``suffix`` properties are used to configure a number of empty bytes at the beginning and end of the struct.
