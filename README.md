@@ -1,7 +1,9 @@
 # JStruct
 The python struct library's port to java for reading and writing binary data as in python. Based off the code found here: https://github.com/ronniebasak/JStruct with non backwards compatible changes to support strong typing, strings, and byte arrays.
 
-In addition there are now annotations to map Java POJOs to struct tokens. Once mapped the POJOs can be packed and unpacked without having to manually create the Struct format.
+In addition there are now annotations to map Java POJOs to structs. Once mapped the POJOs can be packed and unpacked without having to manually create the Struct format.
+
+This was initially written to read binary formats like SAS XPT/BDAT but can be used anywhere a c-like struct needs to be read.
 
 ## Classes
 The Struct class contains static methods for constructing a reuseable Struct object from a format string
