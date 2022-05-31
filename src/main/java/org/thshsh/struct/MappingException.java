@@ -13,7 +13,7 @@ public class MappingException extends RuntimeException {
 	
 	
 	public MappingException(Class<?> c,Exception e) {
-		super("Cannot unpack class "+c,e);
+		super("Cannot Unpack class: "+c,e);
 	}
 
 }

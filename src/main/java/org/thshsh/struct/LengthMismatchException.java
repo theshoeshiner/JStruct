@@ -4,11 +4,9 @@ package org.thshsh.struct;
 public class LengthMismatchException extends RuntimeException {
 	
 	public LengthMismatchException(int expected,int found) {
-		super("Expected token of length "+expected+" but recieved "+found);
+		super("Expected Length: "+expected+" but found: "+found);
 	}
 	
-	public LengthMismatchException(int expected,int found,Object val) {
-		super("Expected token of length "+expected+" but recieved "+found+" for val "+val);
-	}
+	
 
 }

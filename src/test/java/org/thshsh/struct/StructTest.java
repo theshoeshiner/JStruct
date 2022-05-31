@@ -161,7 +161,7 @@ public class StructTest {
 		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(entity);
 		
-		Assertions.assertThrows(ByteMismatchException.class, () -> {
+		Assertions.assertThrows(ByteCountMismatchException.class, () -> {
 			byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
 			Struct.create(EntityConstant2.class).unpackEntity(packed);
 		});

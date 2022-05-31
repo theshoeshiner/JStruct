@@ -262,7 +262,7 @@ public class Struct<T> {
 
 				}
 				
-				if(packedBytes.length != length) throw new LengthMismatchException(length ,packedBytes.length,val);
+				if(packedBytes.length != length) throw new ByteCountMismatchException(length ,packedBytes.length,val);
 				
 
 				System.arraycopy(packedBytes, 0, result, position, packedBytes.length);
@@ -295,7 +295,7 @@ public class Struct<T> {
 		
 		int len = format.byteCount();
 
-		if (len != vals.length) throw new ByteMismatchException(len , vals.length);
+		if (len != vals.length) throw new ByteCountMismatchException(len , vals.length);
 
 		List<Object> tokens = new ArrayList<Object>();
 

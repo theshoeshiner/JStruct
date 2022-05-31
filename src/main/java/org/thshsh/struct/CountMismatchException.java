@@ -4,7 +4,7 @@ package org.thshsh.struct;
 public class CountMismatchException extends RuntimeException {
 	
 	public CountMismatchException(int expected,int vals) {
-		super("Struct tokens: " + expected + " does not equal value tokens: " + vals);
+		super("Expected tokens: " + expected + " but found: " + vals);
 	}
 
 }
