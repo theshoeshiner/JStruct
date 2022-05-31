@@ -6,7 +6,7 @@ In addition there are now annotations to map Java POJOs to struct tokens. Once m
 ## Classes
 The Struct class contains static methods for constructing a reuseable Struct object from a format string
 
-## USAGE:
+## Usage:
 To use this, add the maven dependency:
 
 ```
@@ -17,7 +17,11 @@ To use this, add the maven dependency:
 	</dependency>
 ```
 
-Structs can be created from format strings (similar to the python library)...
+Structs can be created via format strings (similar to the python library) or by annotating Java POJOs.
+
+__Format Strings__
+
+Format strings can use any of the characters specified [below](#specifiers).
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -46,8 +50,10 @@ This library makes all attempts to correctly type the output tokens, but some to
 
 
 See the StructTest.java file for more examples.
-
+<a id="specifiers">
 ## Accepted specifiers:
+</a>
+
   The first char can be a endianness indicator, the following are available
   * ``@`` : Default endianness
   * ``<`` : Little Endian
@@ -56,7 +62,7 @@ See the StructTest.java file for more examples.
 
   The following token specifiers are supported:
   
-  | Tokens | Meaning | Bytes | Type |
+  | Format Character | Meaning | Bytes | Type |
   | --- | --- | --- | ---|
   | ``h  `` | Signed Short | 2 | java.lang.Short
   | ``H`` | Unsigned Short | 2 | java.lang.Integer
