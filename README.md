@@ -19,7 +19,7 @@ To use this, add the maven dependency:
 	</dependency>
 ```
 
-Structs can be created via format strings (similar to the python library) or by annotating Java POJOs.
+Structs can be created via format strings (similar to the python library) or by annotating Java POJOs. They can also be created programmatically via the methods on the Struct class.
 
 ## Format Strings
 
