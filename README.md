@@ -56,20 +56,19 @@ See the StructTest.java file for more examples.
 
   The following token specifiers are supported:
   
-  | Tokens | Meaning | Size | Type |
+  | Tokens | Meaning | Bytes | Type |
   | --- | --- | --- | ---|
-  
-  * ``h  `` : Signed Short (2 bytes) - java.lang.Short
-  * ``H`` : Unsigned Short (2 bytes) - java.lang.Integer
-  * ``i|l`` : Signed Integer (4 bytes) - java.lang.Integer
-  * ``I`` : Unsigned Integer (4 bytes) - java.lang.Long
-  * ``q`` : Signed Long (8 bytes) - java.lang.Long
-  * ``Q`` : Unsigned Long (8 bytes) - java.lang.Long
-  * ``d`` : Floating Point Double (8 bytes) - java.lang.Double
-  * ``s`` : Byte Array - java.lang.Byte[]
-  * ``c|b`` : Byte - java.lang.Byte
-  * ``S`` : String - java.lang.String
-  * ``t`` : Boolean - (1 byte) java.lang.Boolean
+  | ``h  `` | Signed Short | 2 | java.lang.Short
+  | ``H`` | Unsigned Short | 2 | java.lang.Integer
+  | ``i|l`` | Signed Integer | 4 | java.lang.Integer
+  | ``I`` | Unsigned Integer | 4 | java.lang.Long
+  | ``q`` | Signed Long | 8 | java.lang.Long
+  | ``Q`` | Unsigned Long | 8 | java.lang.Long
+  | ``d`` | Floating Point Double | 8 | java.lang.Double
+  | ``s`` | Byte Array | * | java.lang.Byte[]
+  | ``c|b`` | Byte | 1 | java.lang.Byte
+  | ``S`` | String | * | java.lang.String
+  | ``t`` | Boolean | 1 | java.lang.Boolean
   
   
   
