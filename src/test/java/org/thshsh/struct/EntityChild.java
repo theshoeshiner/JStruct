@@ -1,15 +1,15 @@
 package org.thshsh.struct;
 
-public class MyStructEntityChild extends MyStructEntityParent {
+public class EntityChild extends EntityEverything {
 	
 	@StructToken(order = 10,length=8)
 	public String myChildString;
 
-	public MyStructEntityChild() {
+	public EntityChild() {
 		super();
 	}
 
-	public MyStructEntityChild(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
+	public EntityChild(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
 			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned,String child) {
 		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned);
 		this.myChildString = child;
@@ -41,7 +41,7 @@ public class MyStructEntityChild extends MyStructEntityParent {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MyStructEntityChild other = (MyStructEntityChild) obj;
+		EntityChild other = (EntityChild) obj;
 		if (myChildString == null) {
 			if (other.myChildString != null)
 				return false;

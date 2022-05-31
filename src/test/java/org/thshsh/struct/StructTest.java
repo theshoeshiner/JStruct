@@ -1,7 +1,6 @@
 package org.thshsh.struct;
 
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -114,7 +113,7 @@ public class StructTest {
 	@Test()
 	public void testInvalidLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			Struct.create(MyStructInvalidLength.class);
+			Struct.create(EntityInvalidLength.class);
 		});
 	}
 	
@@ -144,7 +143,7 @@ public class StructTest {
 	
 	
 	@Test
-	public void testString() {
+	public void testString()  {
 		Struct f = Struct.create("S3S4S");
 		List<Object> input = Arrays.asList("A","BBB","CCCC");
 		testListInputAllByteOrders(f,input);
@@ -152,76 +151,95 @@ public class StructTest {
 	
 	@Test
 	public void testEntity() {
-		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(mea);
 	}
 	
 	@Test
-	public void testChildEntity() {
-		MyStructEntityChild entity = new MyStructEntityChild("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE,"abcdefgh");
+	public void testCollision() {
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			Struct.create(EntityOrderCollision.class);
+		});
+	}
+	
+	@Test
+	public void testConstant() {
+		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		entity.myConstant = EntityConstant.CONSTANT;
+		testObjectInputAllOrders(entity);
+		
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
+			Struct.create(EntityConstant2.class).unpackEntity(packed);
+		});
+	}
+	
+	@Test
+	public void testChildEntity()  {
+		EntityChild entity = new EntityChild("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE,"abcdefgh");
 		testObjectInputAllOrders(entity);
 	}
 	
 	@Test
-	public void testPrefixAndStuffix() throws IOException {
-		MyEntityWithPrefixAndSuffix mea = new MyEntityWithPrefixAndSuffix("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+	public void testPrefixAndStuffix() {
+		EntityPrefixAndSuffix mea = new EntityPrefixAndSuffix("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(mea);
 		
-		byte[] packed = Struct.create(MyEntityWithPrefixAndSuffix.class).packEntity(mea);
-		MyEntityWithPrefixAndSuffix unpacked = Struct.create(MyEntityWithPrefixAndSuffix.class).unpackEntity(packed);
+		byte[] packed = Struct.create(EntityPrefixAndSuffix.class).packEntity(mea);
+		EntityPrefixAndSuffix unpacked = Struct.create(EntityPrefixAndSuffix.class).unpackEntity(packed);
 		
-		MyStructEntityParent original = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityEverything original = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		Assertions.assertTrue(unpacked.equalsOriginal(original));
 	}
 	
 	@Test
-	public void testGeneric() throws IOException {
-		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct<MyStructEntityParent> s = Struct.create(MyStructEntityParent.class);
+	public void testGeneric() {
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<EntityEverything> s = Struct.create(EntityEverything.class);
 		byte[] bytes =s.packEntity(mea);
-		MyStructEntityParent unpacked = s.unpackEntity(bytes);
+		EntityEverything unpacked = s.unpackEntity(bytes);
 		Assertions.assertTrue(unpacked.equals(mea));
 	}
 	
 	@Test
 	public void testEntityWrongLength() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			MyStructEntityParent mea = new MyStructEntityParent("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-			Struct.create(MyStructEntityParent.class).packEntity(mea);
+			EntityEverything mea = new EntityEverything("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+			Struct.create(EntityEverything.class).packEntity(mea);
 		});
 	}
 	
 	@Test
-	public void testDuplicateEntity() {
+	public void testDuplicateEntity()  {
 		//make sure we can unpack objects of different types as long as the struct configs are the same
-		MyStructEntityParent mea = new MyStructEntityParent("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct<MyStructEntityParent> s = Struct.create(MyStructEntityParent.class);
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<EntityEverything> s = Struct.create(EntityEverything.class);
 		byte[] bytes = s.packEntity(mea);
-		MyStructEntityCopy copy = s.unpackEntity(MyStructEntityCopy.class, bytes);
+		EntityCopy copy = s.unpackEntity(EntityCopy.class, bytes);
 		Assertions.assertTrue(copy.equalsOriginal(mea));
 	}
 	
 	@Test
-	public void testEntityWithClassAnnotation() {
-		MyStructEntityWithAnn mea = new MyStructEntityWithAnn("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		StructEntity sc = MyStructEntityWithAnn.class.getAnnotation(StructEntity.class);
-		Struct<MyStructEntityWithAnn> s = Struct.create(MyStructEntityWithAnn.class);
+	public void testEntityWithClassAnnotation()  {
+		EntityAnnotation mea = new EntityAnnotation("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		StructEntity sc = EntityAnnotation.class.getAnnotation(StructEntity.class);
+		Struct<EntityAnnotation> s = Struct.create(EntityAnnotation.class);
 		
 		Assertions.assertEquals(s.byteOrder,sc.byteOrder());
 		Assertions.assertEquals(s.charset.name(),sc.charset());
 		Assertions.assertEquals(13,s.tokenCount());
 		
 		byte[] bytes = s.packEntity(mea);
-		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
+		EntityAnnotation copy = s.unpackEntity(EntityAnnotation.class, bytes);
 		Assertions.assertTrue(copy.equals(mea));
 	}
 	
 	@Test
 	public void testTrimAndPad() {
-		MyStructEntityWithAnn mea = new MyStructEntityWithAnn("ab ",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
-		Struct<MyStructEntityWithAnn> s = Struct.create(MyStructEntityWithAnn.class);
+		EntityAnnotation mea = new EntityAnnotation("ab ",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Struct<EntityAnnotation> s = Struct.create(EntityAnnotation.class);
 		byte[] bytes = s.packEntity(mea);
-		MyStructEntityWithAnn copy = s.unpackEntity(MyStructEntityWithAnn.class, bytes);
+		EntityAnnotation copy = s.unpackEntity(EntityAnnotation.class, bytes);
 		Assertions.assertEquals(copy.myString, "ab");
 		bytes = s.packEntity(copy);
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
@@ -235,13 +253,13 @@ public class StructTest {
 	@Test
 	public void testChildOverride() {
 		
-		Struct<StructChildLong> sl = Struct.create(StructChildLong.class);
-		Struct<StructChildInteger> si = Struct.create(StructChildInteger.class);
+		Struct<EntityChildLong> sl = Struct.create(EntityChildLong.class);
+		Struct<EntityChildInteger> si = Struct.create(EntityChildInteger.class);
 		
 		Assertions.assertEquals(sl.byteCount(), si.byteCount()+4);
 		
-		byte[] slbytes  = sl.packEntity(new StructChildLong("abc",123l));
-		byte[] sibytes = si.packEntity(new StructChildInteger("abc",123));
+		byte[] slbytes  = sl.packEntity(new EntityChildLong("abc",123l));
+		byte[] sibytes = si.packEntity(new EntityChildInteger("abc",123));
 		
 		LOGGER.info("lon bytes: {}",slbytes);
 		LOGGER.info("int bytes: {}",sibytes);

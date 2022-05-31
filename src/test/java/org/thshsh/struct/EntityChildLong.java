@@ -1,11 +1,11 @@
 package org.thshsh.struct;
 
-public class StructChildLong extends StructParent {
+public class EntityChildLong extends EntityParent {
 
 
 	
 	
-	public StructChildLong(String name, Number id) {
+	public EntityChildLong(String name, Number id) {
 		super(name, id);
 	}
 

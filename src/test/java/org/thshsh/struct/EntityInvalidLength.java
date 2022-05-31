@@ -1,6 +1,6 @@
 package org.thshsh.struct;
 
-public class MyStructInvalidLength {
+public class EntityInvalidLength {
 
 	@StructToken(order=0,length = 2)
 	Short id;

@@ -1,8 +1,8 @@
 package org.thshsh.struct;
 
-public class StructChildInteger extends StructParent {
+public class EntityChildInteger extends EntityParent {
 
-	public StructChildInteger(String name, Number id) {
+	public EntityChildInteger(String name, Number id) {
 		super(name, id);
 	}
 

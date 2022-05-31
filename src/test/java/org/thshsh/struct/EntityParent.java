@@ -1,13 +1,13 @@
 package org.thshsh.struct;
 
-public class StructParent {
+public class EntityParent {
 	
 	@StructToken(order=0,length = 3)
 	protected String name;
 	
 	protected Number id;
 
-	public StructParent(String name, Number id) {
+	public EntityParent(String name, Number id) {
 		super();
 		this.name = name;
 		this.id = id;

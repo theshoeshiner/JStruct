@@ -2,7 +2,7 @@ package org.thshsh.struct;
 
 import java.util.Arrays;
 
-public class MyStructEntityParent {
+public class EntityCopy {
 
 	@StructToken(order = 0,length=3)
 	public String myString;
@@ -24,13 +24,13 @@ public class MyStructEntityParent {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 11)
+	@StructToken(type=TokenType.LongUnsigned, order = 10)
 	public Long myLongUnsigned;
 	
-	public MyStructEntityParent() {}
+	public EntityCopy() {}
 	
 
-	public MyStructEntityParent(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
+	public EntityCopy(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
 			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
 		super();
 		this.myString = myString;
@@ -185,7 +185,7 @@ public class MyStructEntityParent {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MyStructEntityParent other = (MyStructEntityParent) obj;
+		EntityEverything other = (EntityEverything) obj;
 		if (myBoolean == null) {
 			if (other.myBoolean != null)
 				return false;
@@ -241,13 +241,69 @@ public class MyStructEntityParent {
 		return true;
 	}
 	
-	
+	public boolean equalsOriginal(EntityEverything obj) {
+		EntityEverything other = (EntityEverything) obj;
+		if (myBoolean == null) {
+			if (other.myBoolean != null)
+				return false;
+		} else if (!myBoolean.equals(other.myBoolean))
+			return false;
+		if (myByte == null) {
+			if (other.myByte != null)
+				return false;
+		} else if (!myByte.equals(other.myByte))
+			return false;
+		if (!Arrays.equals(myByteArray, other.myByteArray))
+			return false;
+		if (myDouble == null) {
+			if (other.myDouble != null)
+				return false;
+		} else if (!myDouble.equals(other.myDouble))
+			return false;
+		if (myInteger == null) {
+			if (other.myInteger != null)
+				return false;
+		} else if (!myInteger.equals(other.myInteger))
+			return false;
+		if (myIntegerUnsigned == null) {
+			if (other.myIntegerUnsigned != null)
+				return false;
+		} else if (!myIntegerUnsigned.equals(other.myIntegerUnsigned))
+			return false;
+		if (myLong == null) {
+			if (other.myLong != null)
+				return false;
+		} else if (!myLong.equals(other.myLong))
+			return false;
+		if (myLongUnsigned == null) {
+			if (other.myLongUnsigned != null)
+				return false;
+		} else if (!myLongUnsigned.equals(other.myLongUnsigned))
+			return false;
+		if (myShort == null) {
+			if (other.myShort != null)
+				return false;
+		} else if (!myShort.equals(other.myShort))
+			return false;
+		if (myShortUnsigned == null) {
+			if (other.myShortUnsigned != null)
+				return false;
+		} else if (!myShortUnsigned.equals(other.myShortUnsigned))
+			return false;
+		if (myString == null) {
+			if (other.myString != null)
+				return false;
+		} else if (!myString.equals(other.myString))
+			return false;
+		return true;
+	}
+
 
 
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("MyStructEntity [myString=");
+		builder.append("MyStructEntityCopy [myString=");
 		builder.append(myString);
 		builder.append(", myShort=");
 		builder.append(myShort);
@@ -271,7 +327,4 @@ public class MyStructEntityParent {
 		builder.append(myLongUnsigned);
 		builder.append("]");
 		return builder.toString();
-	}
-
-	
-}
+	}}
