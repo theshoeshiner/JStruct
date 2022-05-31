@@ -15,11 +15,11 @@ To use this, add the maven dependency:
 	<dependency>
 		<groupId>org.thshsh</groupId>
 		<artifactId>struct</artifactId>
-		<version>1.0.0</version>
+		<version>2.0.0</version>
 	</dependency>
 ```
 
-Structs can be created via format strings (similar to the python library) or by annotating Java POJOs.
+Structs can be created via format strings (similar to the python library) or by annotating Java POJOs. They can also be created programmatically via the methods on the Struct class.
 
 ## Format Strings
 
