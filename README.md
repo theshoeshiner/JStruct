@@ -66,12 +66,15 @@ Inheritance is supported as long as field ordering and typing is still valid.
 * The ``type`` property is optional, and the Java types listed [here](#tokens) are used to detect the proper data type. The only exception is the unsigned long type, which must be manually specified because it conflicts with the unsigned Integer type (see example below).
 * The ``unsigned`` property defaults to false. Signed types will always be selected unless this is set to true. But remember that unsigned types are represented by the next larger type. e.g. Unsigned Short = Integer, Unsigned Integer = Long.
 * The ``length`` property is optional and only valid for ``String`` and ``byte[]`` types.
-* The ``prefix`` and ``suffix`` properties tell the Struct to ignore a specified number of empty bytes before or after the token.
-* The ``constant`` property allows you specify a constant string to be used for the token. This value will be used regardless of the value of the POJO field, and will be validated during unpacking such that the unpacking *will fail* if the data does not match the constant. Fields for constant tokens do not need to be public. The length property is not required when constant is specified as it will be derived from the constant. The constant can be used on most numeric fields as well, and the string will be converted to the numeric type via valueOf methods. It cannot be used with the Bytes or LongUnsigned types as there is no easy conversion from a String to those types.
+* The ``constant`` property allows you specify a constant string to be used for the token. This value will be used regardless of the value of the POJO field, and can be validated during unpacking such that the unpacking *will fail* if the data does not match the constant. Fields for constant tokens do not need to be public. The length property is not required when constant is specified as it will be derived from the constant. The constant can be used on most numeric fields as well, and the string will be converted to the numeric type via valueOf methods. For the byte[] token type the constant should be specified as a hexidecimal string. A constant cannot be specified for the LongUnsigned type as there is no easy conversion from a String.
+* The ``validate`` property defaults to true and determines whether the unpacking logic will validate that the constant matches the one specified. Note that the specified constant will always be used when _packing_ the entity.
 
 Example usage:
 
 ```
+	@StructToken(order = -2,constant="a1c3" validate=false)
+	protected byte[] dontValidate;
+
 	@StructToken(order = -1,constant="MYSTRUCTHEADER")
 	protected String alwaysPresentHeader;
 
@@ -116,7 +119,6 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
 * The ``byteOrder`` property is used to specify the Byte Order used for packing the entity.
 * The ``charset`` property is used to specify the name of the Charset to be used for unpacking Strings.
 * The ``trimAndPad`` property can be used to enable trimming and padding of byte[] and String tokens.
-* The ``prefix`` and ``suffix`` properties are used to configure a number of empty bytes at the beginning and end of the struct.
 
 
 ## Tokens
