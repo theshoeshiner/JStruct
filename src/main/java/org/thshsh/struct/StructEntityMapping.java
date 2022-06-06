@@ -4,11 +4,13 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,14 +48,7 @@ public class StructEntityMapping<T> {
 	public Struct<T> createStruct() {
 		return createStruct(this);
 	}
-	
-	public int prefix() {
-		return classAnnotation!=null?classAnnotation.prefix():0;
-	}
-	
-	public int suffix() {
-		return classAnnotation!=null?classAnnotation.suffix():0;
-	}
+
 	
 	public void validate(Struct<?> struct) {
 		if(!this.struct.tokens.equals(struct.tokens)) {
@@ -69,15 +64,22 @@ public class StructEntityMapping<T> {
 			
 		for(PropertyDescriptor d : PropertyUtils.getPropertyDescriptors(structClass)) {
 			Mapping mapping = null;
+			Method method = null;
+			Class<?> type = null;
 			if(d.getReadMethod() != null && d.getReadMethod().isAnnotationPresent(StructToken.class)) {
-				mapping = new Mapping(d, null,d.getReadMethod().getAnnotation(StructToken.class),d.getReadMethod().getReturnType());
+				method = d.getReadMethod();
+				type = method.getReturnType();
 			}
 			else if(d.getWriteMethod() != null && d.getWriteMethod().isAnnotationPresent(StructToken.class)) {
-				mapping = new Mapping(d,null, d.getWriteMethod().getAnnotation(StructToken.class),d.getWriteMethod().getParameterTypes()[0]);
+				method = d.getWriteMethod();
+				type = method.getParameterTypes()[0];
 			}
-			if(mapping != null) {
+			
+			if(method != null) {
+				mapping = new Mapping(d, null,method.getAnnotation(StructToken.class),method.getAnnotation(StructTokenPrefix.class),method.getAnnotation(StructTokenSuffix.class),type);
 				properties.add(mapping);
 			}
+	
 		};
 			
 
@@ -88,9 +90,11 @@ public class StructEntityMapping<T> {
 
 				if(field.isAnnotationPresent(StructToken.class)) {
 					StructToken annotation = field.getAnnotation(StructToken.class);
+					StructTokenPrefix pre = field.getAnnotation(StructTokenPrefix.class);
+					StructTokenSuffix suf = field.getAnnotation(StructTokenSuffix.class);
 					try {
 						PropertyDescriptor pd = new PropertyDescriptor(field.getName(), search);
-						Mapping mapping = new Mapping(pd,null, annotation,field.getType());
+						Mapping mapping = new Mapping(pd,null, annotation,pre,suf,field.getType());
 						properties.add(mapping);
 					} 
 					catch (IntrospectionException e) {
@@ -99,7 +103,7 @@ public class StructEntityMapping<T> {
 							throw new MappingException("Field "+field.getName()+" has no property accessors and is not public or a constant",e);
 						}
 						else {
-							Mapping mapping = new Mapping(null,field, annotation,field.getType());
+							Mapping mapping = new Mapping(null,field, annotation,pre,suf,field.getType());
 							properties.add(mapping);
 						}
 					}
@@ -113,6 +117,7 @@ public class StructEntityMapping<T> {
 		Set<Integer> orders = new HashSet<>();
 		for(Mapping m : properties) {
 			Integer i = m.annotation.order();
+			if(i.equals((Integer)StructToken.NULL)) throw new MappingException("Index must be specified for mapped token on entity: "+structClass);
 			if(orders.contains(i)) throw new MappingException("Found two StructTokens at index "+i+" for entity "+structClass);
 			orders.add(i);
 		}
@@ -130,42 +135,46 @@ public class StructEntityMapping<T> {
 		protected PropertyDescriptor property;
 		protected Field field;
 		protected StructToken annotation;
+		protected StructTokenPrefix prefix;
+		protected StructTokenSuffix suffix;
 		protected Class<?> type;
 		protected Object constantValue;
 		protected TokenType tokenType;
 		
-		public Mapping(PropertyDescriptor property, Field f,StructToken annotation, Class<?> type) {
+		public Mapping(PropertyDescriptor property, Field f,StructToken annotation, StructTokenPrefix pre, StructTokenSuffix suf,Class<?> type) {
 			super();
 			this.field = f;
 			this.property = property;
 			this.annotation = annotation;
 			this.type = type;
 			this.tokenType = annotation.type() != TokenType.Auto?annotation.type():TokenType.fromClass(type, false);
-
+			this.prefix = pre;
+			this.suffix = suf;
+			
+			
 			if(StringUtils.isNotEmpty(annotation.constant())) {
-				LOGGER.info("constant was: {}",annotation.constant());
-				if(tokenType.convert == null) throw new MappingException("Cannot specify a constant for TokenType "+tokenType);
+				if(tokenType.convert == null) throw new MappingException("Cannot specify constants for TokenType "+tokenType);
 				else {
-					constantValue = tokenType.convert.apply(annotation.constant());
-					LOGGER.info("converted constant to: {} = {}",constantValue.getClass(),constantValue);
+					//convert constant strings to actual token values
+					constantValue = tokenType.convert(annotation.constant());
 				}
 			}
 		}
-		public void setValue(Object instance, Object value) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-			if(isConstant()) {
-				//confirm constant has correct value
-				//Object constant = constantValue;
-				if(!constantValue.equals(value)) throw new MappingException("Value: '"+value+"' does not match specified constant: '"+constantValue+"'");
-			}
-			else {
+		
+		public void setValue(Object instance, Iterator<Object> values) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+			
+			Object value = values.next();
+
 				if(property != null) {
 					PropertyUtils.setSimpleProperty(instance, property.getName(), value);
 				}
 				else {
 					field.set(instance, value);
 				}
-			}
+
 		}
+		
+		
 		public Object getValue(Object o) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 			if(isConstant())
 				return constantValue;
@@ -174,6 +183,9 @@ public class StructEntityMapping<T> {
 			else 
 				return field.get(o);
 		}
+		
+
+		
 		public boolean isConstant() {
 			return constantValue != null;
 		}
@@ -191,10 +203,6 @@ public class StructEntityMapping<T> {
 		
 		if(config.classAnnotation!=null) {
 			
-			if(config.classAnnotation.prefix() > 0) {
-				Token t = new Token(TokenType.Bytes,1, config.classAnnotation.prefix(),0,0,null);
-				s.appendToken(t);
-			}
 			
 			if(StringUtils.isNotBlank(config.classAnnotation.charset())){
 				s.charset = Charset.forName(config.classAnnotation.charset());
@@ -205,21 +213,66 @@ public class StructEntityMapping<T> {
 		
 	
 		for(Mapping mapping : config.mappings) {
-			StructToken st = mapping.annotation;
-			TokenType tt = mapping.tokenType;
-			Object constantValue = mapping.constantValue;
-			int length = tt.array? ( mapping.isConstant()?st.constant().length():st.length()) : 0;
-			Token t = new Token(tt,st.count(), length,st.prefix(),st.suffix(),constantValue);
-			s.appendToken(t);
+			
+			StructTokenPrefix prefixAnn = mapping.prefix;
+			if(prefixAnn != null) {
+				for(StructToken token : prefixAnn.value()) {
+					Token t = annotationToToken(token);
+					if(t.constant==null) throw new MappingException("StructToken prefix/suffix must specify a constant");
+					t.hide=true;
+					s.appendToken(t);
+				}
+			}
+			
+			{
+				StructToken st = mapping.annotation;
+				TokenType tt = mapping.tokenType;
+				Token t = annotationToToken(st, tt);
+				s.appendToken(t);
+			}
+			
+			StructTokenSuffix suffix = mapping.suffix;
+			if(suffix != null) {
+				for(StructToken token : suffix.value()) {
+					Token t = annotationToToken(token);
+					if(t.constant==null) throw new MappingException("StructToken prefix/suffix must specify a constant");
+					t.hide=true;
+					s.appendToken(t);
+				}
+			}
+			
+		
 		}
 		
-		if(config.classAnnotation!=null && config.classAnnotation.suffix() > 0) {
-			Token t = new Token(TokenType.Bytes,1, config.classAnnotation.suffix(),0,0,null);
-			s.appendToken(t);
-		}
-		
+
 		
 		return s;
+	}
+	
+	public static Token annotationToToken(StructToken anno) {
+		return annotationToToken(anno, anno.type());
+	}
+	
+	public static Token annotationToToken(StructToken anno,TokenType type) {
+		
+		if(type == null) {
+			if(anno.type() == TokenType.Auto) throw new MappingException("Type must be specified for annotation: "+anno);
+			type = anno.type();
+		}
+		int length = anno.length();
+		
+		//get constant value and length
+		Object constantValue = null;
+		if(StringUtils.isNotEmpty(anno.constant())){
+			if(type.convert == null) throw new MappingException("Cannot specify constants for TokenType: "+type);
+			constantValue = type.convert(anno.constant());
+			length = type.length(constantValue);
+		}
+		
+		
+		Token t = new Token(type,1, length,constantValue,anno.validate());
+		
+		return t;
 	}
 
 }

@@ -7,15 +7,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.METHOD})
-public @interface StructToken {
-	
-	public static final int NULL = Integer.MIN_VALUE;
+public @interface StructTokenPrefix {
 
-	int order() default NULL;
-	TokenType type() default TokenType.Auto;
-	int length() default 0;
-	boolean unsigned() default false;
-	String constant() default "";
-	boolean validate() default true;
+	StructToken[] value();
 	
 }

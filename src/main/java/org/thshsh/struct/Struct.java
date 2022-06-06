@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -107,8 +108,9 @@ public class Struct<T> {
 	
 	public int tokenCount() {
 		int count = 0;
-		for (Token t : tokens)
-			count += t.tokenCount();
+		for (Token t : tokens) {
+			if(!t.hide) count += t.tokenCount();
+		}
 		return count;
 	}
 	
@@ -137,21 +139,13 @@ public class Struct<T> {
 			List<Object> values = this.unpack(bytes);
 			V instance = c.newInstance();
 			
-			if(config.prefix() > 0) {
-				values.remove(0);
+			Iterator<Object> valuesIt = values.iterator();
+			Iterator<Mapping> mapit = config.mappings.iterator();
+			
+			for(;valuesIt.hasNext();) {
+				Mapping mapping = mapit.next();
+				mapping.setValue(instance, valuesIt);
 			}
-			
-			if(config.suffix() > 0) {
-				values.remove(values.size()-1);
-			}			
-			
-			for(int i=0;i<values.size();i++) {
-				Mapping mapping = config.mappings.get(i);
-				Object value = values.get(i);
-				mapping.setValue(instance, value);
-			}
-			
-			
 			
 			return instance;
 		} 
@@ -170,19 +164,11 @@ public class Struct<T> {
 			
 			List<Object> values = new ArrayList<Object>();
 			
-			if(config.prefix()>0) {
-				values.add(new byte[config.prefix()]);
-			}
-			
 			for(Mapping mapping : config.mappings) {
 				Object value = mapping.getValue(o);
 				values.add(value);
 			}
-			
-			if(config.suffix()>0) {
-				values.add(new byte[config.suffix()]);
-			}
-									
+				
 			return this.pack(values);
 		} 
 		catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -207,79 +193,95 @@ public class Struct<T> {
 		
 		Iterator<Token> tokens = this.tokens.iterator();
 		Iterator<Object> values = vals.iterator();
-		java.nio.ByteOrder byteOrder = this.byteOrder.getByteOrder();
+		
+		LOGGER.debug("Packing values: {}",vals);
 		
 		while(tokens.hasNext()) {
 			
 			Token token = tokens.next();
-			int length = token.length;
 			
-			position += token.prefix;
-						
+			LOGGER.debug("Packing token: {}",token);
+			
+			int length = token.length;
+									
 			for (int i = 0; i < token.tokenCount(); i++) {
-				Object val = values.next();
 				
-				byte[] packedBytes;
-				switch (token.type) {
-					case Short:
-						packedBytes = Packer.packRaw_16b((short) val, byteOrder);
-						break;
-					case ShortUnsigned:
-						packedBytes = Packer.packRaw_u16b((int) val, byteOrder);
-						break;
-					case Integer:
-						packedBytes = Packer.packRaw_32b(((int) val & 0xffffffff), byteOrder);
-						break;
-					case IntegerUnsigned:
-						packedBytes = Packer.packRaw_u32b((long) val, byteOrder);
-						break;
-					case Long:
-					case LongUnsigned:
-						packedBytes = Packer.packRaw_64b(((long) val & 0xffffffffffffffffl), byteOrder);
-						break;
-					case Double:
-						packedBytes = Packer.packFloat_64b((double) val, byteOrder);
-						break;
-					case Bytes:
-						packedBytes = (byte[]) val;
-						break;
-					case String:
-						String string = (String) val;
-						if(string.length() != token.length) {
-							if(!trimAndPad || token.isConstant()) throw new LengthMismatchException(token.length,string.length());
-							else string = StringUtils.rightPad(string, token.length);
-						}
-						packedBytes = (string).getBytes(this.charset);
-						break;
-					case Boolean:
-						packedBytes = new byte[] {((boolean)val)?(byte)1:(byte)0};
-						break;
-					case Byte:
-						packedBytes = new byte[] {(byte) val};
-						break;
-					default:
-						throw new IllegalArgumentException("Unhandled case: " + token.type);
-
+				Object val;
+				
+				if(token.isConstant()) {
+					val = token.constant;
+					if(!token.hide) values.next();
+				}
+				else {
+					val = values.next();
 				}
 				
-				if(packedBytes.length != length) throw new ByteCountMismatchException(length ,packedBytes.length,val);
+				LOGGER.debug("Packing val: {}",val);
 				
-
+				byte[] packedBytes = pack(token, val);
+				if(packedBytes.length != length) throw new ByteCountMismatchException(length ,packedBytes.length,val);
 				System.arraycopy(packedBytes, 0, result, position, packedBytes.length);
 				position += packedBytes.length;
 				
 			}
 			
-			position += token.suffix;
 			
 		}
 		
-
-
 		return result;
 
 	}
 
+	protected byte[] pack(Token token,Object val) {
+		
+		TokenType type = token.type;
+		java.nio.ByteOrder byteOrder = this.byteOrder.getByteOrder();
+		
+		byte[] packedBytes;
+		switch (type) {
+			case Short:
+				packedBytes = Packer.packRaw_16b((short) val, byteOrder);
+				break;
+			case ShortUnsigned:
+				packedBytes = Packer.packRaw_u16b((int) val, byteOrder);
+				break;
+			case Integer:
+				packedBytes = Packer.packRaw_32b(((int) val & 0xffffffff), byteOrder);
+				break;
+			case IntegerUnsigned:
+				packedBytes = Packer.packRaw_u32b((long) val, byteOrder);
+				break;
+			case Long:
+			case LongUnsigned:
+				packedBytes = Packer.packRaw_64b(((long) val & 0xffffffffffffffffl), byteOrder);
+				break;
+			case Double:
+				packedBytes = Packer.packFloat_64b((double) val, byteOrder);
+				break;
+			case Bytes:
+				packedBytes = (byte[]) val;
+				break;
+			case String:
+				String string = (String) val;
+				if(string.length() != token.length) {
+					if(!trimAndPad || token.isConstant()) throw new LengthMismatchException(token.length,string.length());
+					else string = StringUtils.rightPad(string, token.length);
+				}
+				packedBytes = (string).getBytes(this.charset);
+				break;
+			case Boolean:
+				packedBytes = new byte[] {((boolean)val)?(byte)1:(byte)0};
+				break;
+			case Byte:
+				packedBytes = new byte[] {(byte) val};
+				break;
+			default:
+				throw new IllegalArgumentException("Unhandled case: " + token.type);
+		}
+		
+		return packedBytes;
+		
+	}
 
 	public List<Object> unpack(InputStream stream) throws IOException{
 		byte[] buffer = new byte[byteCount()];
@@ -306,9 +308,9 @@ public class Struct<T> {
 		ByteArrayInputStream bs = new ByteArrayInputStream(vals);
 		
 		try {
-			for (Token token : format.tokens) {
+			for(int t=0;t<format.tokens.size();t++) {
 
-				IOUtils.readFully(bs, token.prefix);
+				Token token = format.tokens.get(t);
 				
 				count: for (int i = 0; i < token.tokenCount(); i++) {
 					
@@ -316,12 +318,24 @@ public class Struct<T> {
 					//dont trim constants
 					boolean trim = token.isConstant()?false:this.trimAndPad;
 					Object o = unpack(token.type,  byteOrder, charset, ar,bs,trim);
-					tokens.add(o);
+					
+					LOGGER.debug("unpacked: '{}'",o);
+
+					if(token.isConstant() && token.validate) {
+						if(!token.type.equalsFunction.apply(token.constant, o)) {
+							//LOGGER.error("constant mismatch: {} vs {}",new Object[] {token.constant,o});
+							throw new ConstantMismatchException(t,token.constant,o);
+						}
+					}
+					
+					if(!token.hide) {
+						tokens.add(o);
+					}
+					
 					if(token.type.array) break count;
 
 				}
 				
-				IOUtils.readFully(bs, token.suffix);
 
 			}
 		} 
@@ -330,7 +344,7 @@ public class Struct<T> {
 			throw new IllegalStateException("Exception reading in memory byte array",e);
 		}
 
-		
+		LOGGER.debug("unpacked: {}",tokens);
 
 		return tokens;
 
@@ -408,6 +422,8 @@ public class Struct<T> {
 	
 		if(trim == null) trim = false;
 		java.nio.ByteOrder byteOrder = order.getByteOrder();
+		
+		LOGGER.debug("unpacking: {}",Hex.encodeHexString(bytes));
 				
 		switch (type) {
 			case ShortUnsigned:

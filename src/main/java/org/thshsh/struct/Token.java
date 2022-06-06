@@ -15,33 +15,27 @@ public class Token {
 	protected int length;
 	//cache calculation of byte count
 	protected int byteCount;
-	//prefix to ignore
-	protected int prefix;
-	//suffix to ignore
-	protected int suffix;
 	//constant value to use
 	protected Object constant;
+	protected Boolean hide = false;
+	protected Boolean validate = true;
 	
 	public Token(TokenType type, int countOrLength) {
-		this(type,type.array?1:countOrLength,type.array?countOrLength:0,0,0,null);
+		this(type,type.array?1:countOrLength,type.array?countOrLength:0,null,true);
 	}
 
-	public Token(TokenType type, int count, int len, int pre, int suf,Object constant) {
+	public Token(TokenType t, int count, int len, Object constant,boolean val) {
 		super();
-		this.type = type;
-		if(!type.array && len > 0) throw new MappingException("Length cannot be specified for Struct Token type: "+type);
-		if(type.array) {
-			this.length = len;
-		}
+		this.type = t;
+		if(!type.array && len != 0 && len != type.size) throw new MappingException("Length: "+len+" cannot be specified for Struct Token type: "+type);
+		if(type.array) this.length = len;
 		else this.length = type.size;
 		this.count = count;
 		if (count == 0)
 			throw new MappingException("Count cannot be zero");
-		this.prefix = pre;
-		this.suffix = suf;
 		this.constant = constant;
-		
-		byteCount = count * length + prefix + suffix;
+		this.validate = val;
+		byteCount = count * length ;//+ prefixBytes + suffixBytes;
 		
 	}
 
@@ -52,14 +46,7 @@ public class Token {
 	public int length() {
 		return length;
 	}
-	
-	public int prefix() {
-		return prefix;
-	}
-	
-	public int suffix() {
-		return suffix;
-	}
+
 	
 	public int byteCount() {
 		return byteCount;
@@ -78,10 +65,6 @@ public class Token {
 		builder.append(count);
 		builder.append(", length=");
 		builder.append(length);
-		builder.append(", prefix=");
-		builder.append(prefix);
-		builder.append(", suffix=");
-		builder.append(suffix);
 		builder.append("]");
 		return builder.toString();
 	}
@@ -92,8 +75,6 @@ public class Token {
 		int result = 1;
 		result = prime * result + count;
 		result = prime * result + length;
-		result = prime * result + prefix;
-		result = prime * result + suffix;
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
@@ -110,10 +91,6 @@ public class Token {
 		if (count != other.count)
 			return false;
 		if (length != other.length)
-			return false;
-		if (prefix != other.prefix)
-			return false;
-		if (suffix != other.suffix)
 			return false;
 		if (type != other.type)
 			return false;

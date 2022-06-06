@@ -11,29 +11,24 @@ public @interface StructEntity {
 
 	/**
 	 * The byte order to use for this entity
+	 * 
 	 * @return
 	 */
 	ByteOrder byteOrder() default ByteOrder.Native;
-	
+
 	/**
 	 * The charset to use for this entity
+	 * 
 	 * @return
 	 */
 	String charset() default "";
-	
+
 	/**
-	 * Tells the Struct to trim and pad this String or Array 
+	 * Tells the Struct to trim and pad this String or Array
+	 * 
 	 * @return
 	 */
 	boolean trimAndPad() default false;
-	
-	/**
-	 * Padding on end of struct
-	 * @return
-	 */
-	int suffix() default 0;
-	
-	int prefix() default 0;
-	
-	
+
+
 }
