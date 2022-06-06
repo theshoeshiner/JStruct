@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class EntityPrefixAndSuffix {
 
-	@StructToken(order = 0,length=3,prefix = 1,suffix = 1)
+	@StructToken(order = 0,length=3)
 	public String myString;
 	@StructToken(order = 2)
 	public 	Short myShort;
@@ -24,7 +24,7 @@ public class EntityPrefixAndSuffix {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 11,suffix = 10,prefix = 10)
+	@StructToken(type=TokenType.LongUnsigned, order = 11)
 	public Long myLongUnsigned;
 	
 	

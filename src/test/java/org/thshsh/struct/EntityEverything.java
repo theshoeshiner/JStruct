@@ -6,10 +6,13 @@ public class EntityEverything {
 
 	@StructToken(order = 0,length=3)
 	public String myString;
-	@StructToken(order = 2)
-	public 	Short myShort;
+	
 	@StructToken(order = 1)
 	public Integer myInteger;
+	
+	@StructToken(order = 2)
+	public 	Short myShort;
+	
 	@StructToken(order = 3)
 	public Long myLong;
 	@StructToken(order = 4)

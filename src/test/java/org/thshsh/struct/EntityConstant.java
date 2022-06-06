@@ -6,7 +6,7 @@ public class EntityConstant extends EntityEverything {
 	
 	public static final String CONSTANT = "thisisconstant";
 	
-	@StructToken(order = 12,constant = CONSTANT)
+	@StructToken(order = -1,constant = CONSTANT,validate = false)
 	public String myConstant;
 	
 	@StructToken(order = 13,constant = "12345")

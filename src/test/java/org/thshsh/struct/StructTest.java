@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -160,10 +161,35 @@ public class StructTest {
 	public void testConstant() {
 		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(entity);
-		
-		Assertions.assertThrows(ByteCountMismatchException.class, () -> {
-			byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
+		byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
+		packed[0] = 'd';
+		EntityConstant ec = Struct.create(EntityConstant.class).unpackEntity(packed);
+		Assertions.assertEquals("dhisisconstant", ec.myConstant);
+	}
+	
+	@Test
+	public void testConstantValidate() {
+		EntityConstant2 entity = new EntityConstant2("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		Assertions.assertThrows(ConstantMismatchException.class, () -> {
+			byte[] packed = Struct.create(EntityConstant2.class).packEntity(entity);
+			packed[0] = 'd';
 			Struct.create(EntityConstant2.class).unpackEntity(packed);
+		});
+	}
+	
+	@Test
+	public void testConstantPrefixAndSuffix() {
+		EntityConstant3 entity = new EntityConstant3("12345","la");
+		Struct s = Struct.create(EntityConstant3.class);
+		LOGGER.info("Created: {}",s);
+		LOGGER.info("Tokens: {}",s.tokens);
+		testObjectInputAllOrders(entity);
+		
+
+		ConstantMismatchException e = Assertions.assertThrows(ConstantMismatchException.class, () -> {
+			byte[] bytes = s.packEntity(entity);
+			bytes[0] = 100;
+			s.unpackEntity(bytes);
 		});
 	}
 	
@@ -173,7 +199,7 @@ public class StructTest {
 		testObjectInputAllOrders(entity);
 	}
 	
-	@Test
+	/*@Test
 	public void testPrefixAndStuffix() {
 		EntityPrefixAndSuffix mea = new EntityPrefixAndSuffix("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		testObjectInputAllOrders(mea);
@@ -183,7 +209,7 @@ public class StructTest {
 		
 		EntityEverything original = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
 		Assertions.assertTrue(unpacked.equalsOriginal(original));
-	}
+	}*/
 	
 	@Test
 	public void testGeneric() {
@@ -220,7 +246,7 @@ public class StructTest {
 		
 		Assertions.assertEquals(s.byteOrder,sc.byteOrder());
 		Assertions.assertEquals(s.charset.name(),sc.charset());
-		Assertions.assertEquals(13,s.tokenCount());
+		Assertions.assertEquals(11,s.tokenCount());
 		
 		byte[] bytes = s.packEntity(mea);
 		EntityAnnotation copy = s.unpackEntity(EntityAnnotation.class, bytes);

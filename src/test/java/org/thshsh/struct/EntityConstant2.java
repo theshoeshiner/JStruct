@@ -2,9 +2,9 @@ package org.thshsh.struct;
 
 public class EntityConstant2 extends EntityEverything  {
 
-public static final String CONSTANT = "THISISCONSTANTISDIFFERENT";
+	public static final String CONSTANT = "THISISCONSTANTISDIFFERENT";
 	
-	@StructToken(order = 12,constant = CONSTANT)
+	@StructToken(order = -1,constant = CONSTANT)
 	public String myConstant;
 
 	public EntityConstant2() {
