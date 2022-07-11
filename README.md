@@ -23,7 +23,15 @@ Structs can be created via format strings (similar to the python library) or by 
 
 ## Format Strings
 
+  The first char can be a endianness indicator, the following are available
+  * ``@`` : Default endianness
+  * ``<`` : Little Endian
+  * ``>`` : Big Endian
+  * ``!`` : Network byte order, same as >
+
 Format strings can use any of the characters specified [here](#tokens).
+
+Example Usage:
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -123,11 +131,6 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
 
 ## Tokens
 
-  The first char can be a endianness indicator, the following are available
-  * ``@`` : Default endianness
-  * ``<`` : Little Endian
-  * ``>`` : Big Endian
-  * ``!`` : Network byte order, same as >
 
   The following token specifiers are supported:
   
