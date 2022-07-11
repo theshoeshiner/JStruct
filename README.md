@@ -114,11 +114,11 @@ Example usage:
 
 When using the Annotations the POJOs must be packed/unpacked using the ``Struct.packEntity`` and ``Struct.unpackEntity`` methods.
 
-The ``@StructEntity`` Annotation can be used to further customize the packing process. It has 5 properties which can be specified...
+The ``@StructEntity`` Annotation can be used to further customize the packing process. It has 3 properties which can be specified...
 
 * The ``byteOrder`` property is used to specify the Byte Order used for packing the entity.
-* The ``charset`` property is used to specify the name of the Charset to be used for unpacking Strings.
-* The ``trimAndPad`` property can be used to enable trimming and padding of byte[] and String tokens.
+* The ``charset`` property is used to specify the name of the Charset to be used for packing/unpacking Strings.
+* The ``trimAndPad`` property can be used to enable trimming and padding of byte[] and String tokens. This causes whitespace and empty bytes to be trimmed when unpacking and added when packing so that lengths are correct. If this is not enabled then strings and byte arrays must match the expected lengths.
 
 
 ## Tokens
