@@ -31,7 +31,7 @@ Structs can be created via format strings (similar to the python library) or by 
 
 Format strings can use any of the characters specified [here](#tokens).
 
-### Example Usage:
+** Example Usage: **
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -77,7 +77,7 @@ Inheritance is supported as long as field ordering and typing is still valid.
 * The ``constant`` property allows you specify a constant string to be used for the token. This value will be used when packing regardless of the value of the POJO field, and is (optionally) validated during unpacking such that the unpacking *will fail* if the data does not match the constant. Fields for constant tokens do not need to be public or have getters/setters as their value is never actually set. The length property is not required when constant is specified as it will be derived from the constant. The constant can be used on most numeric fields as well, and the string will be converted to the numeric type via the static valueOf methods. For the byte[] token type the constant should be specified as a hexidecimal string. A constant cannot be specified for the LongUnsigned type as there is no easy conversion from a String.
 * The ``validate`` property defaults to true and determines whether the unpacking logic will validate that the data matches the specified constant. Note that the specified constant will always be used when _packing_ the entity.
 
-Example usage:
+**Example usage:**
 
 ```
 	@StructToken(order = -2,constant="a1c3" validate=false)
@@ -132,14 +132,18 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
 
 ### Prefix / Suffix
 
-The ``@StructTokenPrefix`` and ``@StructTokenSuffix`` can be used on any ``@StructToken`` annotated field to add untracked tokens (ie tokens who's value is not saved to a field). These annotations can contain a list of ``@StructToken`` annotations which are applied, in order, either before or after the token field they are applied to. Tokens specified within a prefix or suffix _must_ contain a constant, since their value will not be persisted to a field.
+The ``@StructTokenPrefix`` and ``@StructTokenSuffix`` can be used on any ``@StructToken`` annotated field to add untracked tokens (ie tokens who's value is not saved to a field). This is most often used when a struct contains constant values, as these values rarely need to be persisted in a field. These annotations contain a list of ``@StructToken`` annotations which are applied, in order, as a prefix or suffix to field they are applied to. Tokens specified within these _must_ contain a constant, since their value will not be persisted to a field. The StructToken ``type`` proeprty _must_ also be specified for prefixes and suffixes as there is no field type to derive it from.
 
 **Example Usage**
 
 ```
-@StructTokenPrefix({@StructToken(type=TokenType.String,constant = "HEADERPREFIX)})
+@StructTokenPrefix({
+	@StructToken(type=TokenType.String,constant = "HEADERPREFIX),
+	@StructToken(type = TokenType.Byte,constant = "0",validate = false)})
 @StructToken(order=1,length=3)
-@StructTokenSuffix({@StructToken(type=TokenType.String,constant = "********")})
+@StructTokenSuffix({
+	@StructToken(type=TokenType.String,constant = "********"),
+	@StructToken(type = TokenType.Bytes,constant = "0000"})
 public String myString;
 ```
 
