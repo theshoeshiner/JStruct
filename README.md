@@ -15,7 +15,7 @@ To use this, add the maven dependency:
 	<dependency>
 		<groupId>org.thshsh</groupId>
 		<artifactId>struct</artifactId>
-		<version>2.0.0</version>
+		<version>2.1.0</version>
 	</dependency>
 ```
 
