@@ -131,7 +131,7 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
 
   The following token specifiers are supported:
   
-  | Data | Character | Enum | Bytes | Java Type |
+  | Description | Character | TokenType Enum | Bytes | Java Type |
   | --- | --- | --- | --- | --- |
   | Signed Short | ``h  `` | TokenType.Short | 2 | java.lang.Short
   | Unsigned Short | ``H`` | TokenType.ShortUnsigned | 2 | java.lang.Integer
