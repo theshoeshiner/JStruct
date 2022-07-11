@@ -142,7 +142,7 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
   | Floating Point Double | ``d`` | TokenType.Double | 8 | java.lang.Double
   |  Byte Array | ``s`` | TokenType.Bytes | * | java.lang.Byte[]
   | Byte | ``c\|b`` | TokenType.Byte | 1 | java.lang.Byte
-  | String | ``S`` | TokenType.IntegerString | * | java.lang.String
+  | String | ``S`` | TokenType.String | * | java.lang.String
   | Boolean | ``t`` | TokenType.Boolean | 1 | java.lang.Boolean
   
   
