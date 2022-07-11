@@ -138,7 +138,7 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
   | Signed Integer | ``i\|l`` | TokenType.Integer | 4 | java.lang.Integer
   | Unsigned Integer | ``I`` | TokenType.IntegerUnsigned | 4 | java.lang.Long
   |  Signed Long | ``q`` | TokenType.Long | 8 | java.lang.Long
-  | Unsigned Long | ``Q`` | TokenType.LongUnsigned | 8 | java.lang.Long *
+  | Unsigned Long | ``Q`` | TokenType.LongUnsigned | 8 | java.lang.Long †
   | Floating Point Double | ``d`` | TokenType.Double | 8 | java.lang.Double
   |  Byte Array | ``s`` | TokenType.Bytes | * | java.lang.Byte[]
   | Byte | ``c\|b`` | TokenType.Byte | 1 | java.lang.Byte
@@ -146,7 +146,7 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
   | Boolean | ``t`` | TokenType.Boolean | 1 | java.lang.Boolean
   
   
-\* See [Flaws](#flaws)
+† See [Flaws](#flaws)
 
 Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the length of the array / characters in the string. For all other token types it specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
