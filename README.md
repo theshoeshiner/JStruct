@@ -5,10 +5,10 @@ In addition there are now annotations to map Java POJOs to structs. Once mapped 
 
 This was initially written to read binary formats like SAS XPT/BDAT but can be used anywhere a c-like struct needs to be read.
 
-## Classes
+### Classes
 The Struct class contains static methods for constructing a reuseable Struct object from a format string
 
-## Usage:
+### Usage:
 To use this, add the maven dependency:
 
 ```
@@ -31,7 +31,7 @@ Structs can be created via format strings (similar to the python library) or by 
 
 Format strings can use any of the characters specified [here](#tokens).
 
-Example Usage:
+### Example Usage:
 
 ```
 Struct struct = Struct.create(">2h2i2q2d4s5S");
@@ -120,6 +120,8 @@ Example usage:
 	public Long myLongUnsigned;
 ```
 
+
+
 When using the Annotations the POJOs must be packed/unpacked using the ``Struct.packEntity`` and ``Struct.unpackEntity`` methods.
 
 The ``@StructEntity`` Annotation can be used to further customize the packing process. It has 3 properties which can be specified...
@@ -128,6 +130,18 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
 * The ``charset`` property is used to specify the name of the Charset to be used for packing/unpacking Strings.
 * The ``trimAndPad`` property can be used to enable trimming and padding of byte[] and String tokens. This causes whitespace and empty bytes to be trimmed when unpacking and added when packing so that lengths are correct. If this is not enabled then strings and byte arrays must match the expected lengths.
 
+### Prefix / Suffix
+
+The ``@StructTokenPrefix`` and ``@StructTokenSuffix`` can be used on any ``@StructToken`` annotated field to add untracked tokens (ie tokens who's value is not saved to a field). These annotations can contain a list of ``@StructToken`` annotations which are applied, in order, either before or after the token field they are applied to. Tokens specified within a prefix or suffix _must_ contain a constant, since their value will not be persisted to a field.
+
+**Example Usage**
+
+```
+@StructTokenPrefix({@StructToken(type=TokenType.String,constant = "HEADERPREFIX)})
+@StructToken(order=1,length=3)
+@StructTokenSuffix({@StructToken(type=TokenType.String,constant = "********")})
+public String myString;
+```
 
 ## Tokens
 
