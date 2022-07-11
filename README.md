@@ -138,7 +138,7 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
   | Signed Integer | ``i\|l`` | TokenType.Integer | 4 | java.lang.Integer
   | Unsigned Integer | ``I`` | TokenType.IntegerUnsigned | 4 | java.lang.Long
   |  Signed Long | ``q`` | TokenType.Long | 8 | java.lang.Long
-  | Unsigned Long | ``Q`` | TokenType.LongUnsigned | 8 | java.lang.Long
+  | Unsigned Long | ``Q`` | TokenType.LongUnsigned | 8 | java.lang.Long *
   | Floating Point Double | ``d`` | TokenType.Double | 8 | java.lang.Double
   |  Byte Array | ``s`` | TokenType.Bytes | * | java.lang.Byte[]
   | Byte | ``c\|b`` | TokenType.Byte | 1 | java.lang.Byte
@@ -146,7 +146,8 @@ The ``@StructEntity`` Annotation can be used to further customize the packing pr
   | Boolean | ``t`` | TokenType.Boolean | 1 | java.lang.Boolean
   
   
-  
+\* See [Flaws](#flaws)
+
 Unlike python, a integer prefix can be present on *any* token. For the byte array and String types ('s' and 'S') the number specified is the length of the array / characters in the string. For all other token types it specifies the *number of times the next token is repeated*. This allows format strings to be more concise and readable e.g. the following two patterns are functionally the same:
 
 ```
@@ -157,7 +158,7 @@ iiiiqqqqdddd4s4S
 
 ## Flaws
 
-Because java cannot represent an unsigned 8 byte integer with a primitive, the unsigned long type ('Q') returns a signed Long.  *The underlying bits are correct* , so the 2's compliment decimal value will not match the desired decimal value. If you need the unsigned value you can use the Java 8 function Long.toUnsignedString(n) to convert and store in a BigInteger:
+Because java cannot represent an unsigned 8 byte integer with a primitive, the unsigned long type ('Q') returns a signed Long.  *The underlying bits are correct* , so the 2's compliment decimal value will not match the expected decimal value. If you need the unsigned value you can use the Java 8 function Long.toUnsignedString(n) to convert and store in a BigInteger:
 
 ```
 BigInteger bi = new BigInteger(Long.toUnsignedString(n));
