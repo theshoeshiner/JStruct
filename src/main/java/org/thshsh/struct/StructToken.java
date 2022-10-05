@@ -12,6 +12,7 @@ public @interface StructToken {
 	public static final int NULL = Integer.MIN_VALUE;
 
 	int order() default NULL;
+	int offset() default NULL;
 	TokenType type() default TokenType.Auto;
 	int length() default 0;
 	boolean unsigned() default false;

@@ -3,17 +3,17 @@ package org.thshsh.struct;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -114,13 +114,66 @@ public class StructEntityMapping<T> {
 		while(search != null);
 		
 		if(properties.size()==0) throw new MappingException("No Struct properties found on class "+structClass.getCanonicalName());
+		
+
+		Collections.sort(properties, (p0,p1) -> {
+			return  ((Integer)p0.annotation.order()).compareTo(p1.annotation.order());
+		});
+		
 		Set<Integer> orders = new HashSet<>();
+		Set<Integer> offsets = new HashSet<>();
+		Map<Integer,Mapping> offsetMap = new TreeMap<>();
+		Integer length = 0;
 		for(Mapping m : properties) {
-			Integer i = m.annotation.order();
-			if(i.equals((Integer)StructToken.NULL)) throw new MappingException("Index must be specified for mapped token on entity: "+structClass);
-			if(orders.contains(i)) throw new MappingException("Found two StructTokens at index "+i+" for entity "+structClass);
-			orders.add(i);
+			//LOGGER.info("ann: {}",m.annotation);
+			//Token t = annotationToToken(m.annotation,m.tokenType);
+			Integer order = m.annotation.order();
+			Integer offset = m.annotation.offset();
+			
+			if((order.equals((Integer)StructToken.NULL) && offset.equals((Integer)StructToken.NULL)) ||
+				(!order.equals((Integer)StructToken.NULL) && !offset.equals((Integer)StructToken.NULL))
+			) throw new MappingException("One of Index or Offset must be specified for mapped token on entity: "+structClass);
+			
+			if(order.equals((Integer)StructToken.NULL)) {
+				//use offset
+				if(offsets.contains(offset)) throw new MappingException("Found two StructTokens at offset "+offset+" for entity "+structClass);
+				offsets.add(offset);
+				offsetMap.put(offset, m);
+			}
+			else {
+				//derive offset
+				if(orders.contains(order)) throw new MappingException("Found two StructTokens at index "+order+" for entity "+structClass);
+				if(offsets.contains(length)) throw new MappingException("Found two StructTokens at offset "+length+" for entity "+structClass);
+				LOGGER.debug("deriving offset from order: {} = {}",order,length);
+				orders.add(order);
+				offsets.add(length);
+				offsetMap.put(length, m);
+				length+=m.length;
+			}
+
 		}
+		
+		LOGGER.debug("offsetMap: {}",offsetMap);
+		
+		List<Mapping> finalList = new ArrayList<>();
+		
+		Integer currentOffset = 0;
+		for(Integer offset : offsetMap.keySet()) {
+			
+			Mapping mapping = offsetMap.get(offset);
+			LOGGER.debug("offset: {} has mapping: {}",offset,mapping.token);
+			LOGGER.debug("currentOffset: {}",currentOffset);
+			if(offset.equals(currentOffset)) {
+				finalList.add(mapping);
+			}
+			else {
+				LOGGER.debug("Offset is off by {}",offset-currentOffset);
+				mapping.addPrefixBytes(offset-currentOffset);
+				//currentOffset = offset;
+			}
+			currentOffset += mapping.length;
+		}
+		
 		properties.sort((f0,f1)-> {
 			return ((Integer)f0.annotation.order()).compareTo(f1.annotation.order());
 			
@@ -129,66 +182,6 @@ public class StructEntityMapping<T> {
 
 		return config;
 
-	}
-	
-	public static class Mapping {
-		protected PropertyDescriptor property;
-		protected Field field;
-		protected StructToken annotation;
-		protected StructTokenPrefix prefix;
-		protected StructTokenSuffix suffix;
-		protected Class<?> type;
-		protected Object constantValue;
-		protected TokenType tokenType;
-		
-		public Mapping(PropertyDescriptor property, Field f,StructToken annotation, StructTokenPrefix pre, StructTokenSuffix suf,Class<?> type) {
-			super();
-			this.field = f;
-			this.property = property;
-			this.annotation = annotation;
-			this.type = type;
-			this.tokenType = annotation.type() != TokenType.Auto?annotation.type():TokenType.fromClass(type, false);
-			this.prefix = pre;
-			this.suffix = suf;
-			
-			
-			if(StringUtils.isNotEmpty(annotation.constant())) {
-				if(tokenType.convert == null) throw new MappingException("Cannot specify constants for TokenType "+tokenType);
-				else {
-					//convert constant strings to actual token values
-					constantValue = tokenType.convert(annotation.constant());
-				}
-			}
-		}
-		
-		public void setValue(Object instance, Iterator<Object> values) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-			
-			Object value = values.next();
-
-				if(property != null) {
-					PropertyUtils.setSimpleProperty(instance, property.getName(), value);
-				}
-				else {
-					field.set(instance, value);
-				}
-
-		}
-		
-		
-		public Object getValue(Object o) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-			if(isConstant())
-				return constantValue;
-			else if(property != null) 
-				return PropertyUtils.getSimpleProperty(o, property.getName());
-			else 
-				return field.get(o);
-		}
-		
-
-		
-		public boolean isConstant() {
-			return constantValue != null;
-		}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -214,32 +207,9 @@ public class StructEntityMapping<T> {
 	
 		for(Mapping mapping : config.mappings) {
 			
-			StructTokenPrefix prefixAnn = mapping.prefix;
-			if(prefixAnn != null) {
-				for(StructToken token : prefixAnn.value()) {
-					Token t = annotationToToken(token);
-					if(t.constant==null) throw new MappingException("StructToken prefix/suffix must specify a constant");
-					t.hide=true;
-					s.appendToken(t);
-				}
-			}
-			
-			{
-				StructToken st = mapping.annotation;
-				TokenType tt = mapping.tokenType;
-				Token t = annotationToToken(st, tt);
-				s.appendToken(t);
-			}
-			
-			StructTokenSuffix suffix = mapping.suffix;
-			if(suffix != null) {
-				for(StructToken token : suffix.value()) {
-					Token t = annotationToToken(token);
-					if(t.constant==null) throw new MappingException("StructToken prefix/suffix must specify a constant");
-					t.hide=true;
-					s.appendToken(t);
-				}
-			}
+			s.appendTokens(mapping.prefixTokens);
+			s.appendToken(mapping.token);
+			s.appendTokens(mapping.suffixTokens);
 			
 		
 		}

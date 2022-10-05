@@ -17,7 +17,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.thshsh.struct.StructEntityMapping.Mapping;
 
 /**
  * 
@@ -68,6 +67,11 @@ public class Struct<T> {
 	
 	public Struct<T> appendToken(Token t) {
 		tokens.add(t);
+		return this;
+	}
+	
+	public Struct<T> appendTokens(Iterable<Token> it) {
+		it.forEach(t -> tokens.add(t));
 		return this;
 	}
 	
@@ -143,8 +147,9 @@ public class Struct<T> {
 			Iterator<Mapping> mapit = config.mappings.iterator();
 			
 			for(;valuesIt.hasNext();) {
+				Object value = valuesIt.next();
 				Mapping mapping = mapit.next();
-				mapping.setValue(instance, valuesIt);
+				mapping.setValue(instance, value);
 			}
 			
 			return instance;
@@ -304,33 +309,47 @@ public class Struct<T> {
 		//reuse arrays when possible
 		byte[][] arrays = new byte[][] {null,new byte[1],new byte[2],null,new byte[4],null,null,null,new byte[8]};
 
-	
-		ByteArrayInputStream bs = new ByteArrayInputStream(vals);
 		
+		ByteArrayInputStream bs = new ByteArrayInputStream(vals);
+		int position = 0;
 		try {
 			for(int t=0;t<format.tokens.size();t++) {
 
 				Token token = format.tokens.get(t);
+			
+				LOGGER.debug("token: {}",t);
 				
 				count: for (int i = 0; i < token.tokenCount(); i++) {
 					
+					LOGGER.debug("position: {}",position);
+					
 					byte[] ar = token.type.array?new byte[token.length]:arrays[token.type.size];
+					
 					//dont trim constants
 					boolean trim = token.isConstant()?false:this.trimAndPad;
 					Object o = unpack(token.type,  byteOrder, charset, ar,bs,trim);
 					
 					LOGGER.debug("unpacked: '{}'",o);
 
-					if(token.isConstant() && token.validate) {
-						if(!token.type.equalsFunction.apply(token.constant, o)) {
-							//LOGGER.error("constant mismatch: {} vs {}",new Object[] {token.constant,o});
-							throw new ConstantMismatchException(t,token.constant,o);
+					if(token.isConstant()) {
+						
+					LOGGER.debug("expecting: '{}'",token.constant);
+					
+						if(token.validate) {
+							if(!token.type.equalsFunction.apply(token.constant, o)) {
+								//LOGGER.error("constant mismatch: {} vs {}",new Object[] {token.constant,o});
+								throw new ConstantMismatchException(t,token.constant,o);
+							}
 						}
 					}
 					
 					if(!token.hide) {
 						tokens.add(o);
 					}
+					else {
+						LOGGER.debug("hiding token");
+					}
+					position+=ar.length;
 					
 					if(token.type.array) break count;
 
@@ -338,6 +357,9 @@ public class Struct<T> {
 				
 
 			}
+			
+			LOGGER.debug("end position: {}",position);
+			
 		} 
 		catch (IOException e) {
 			//We can catch this IO exception because it's unlikely since we're working with in memory bytes
@@ -355,6 +377,7 @@ public class Struct<T> {
 	}
 
 	public static <T> Struct<T> create(Class<T> structClass) {
+		LOGGER.debug("create: {}",structClass);
 		return StructEntityMapping.get(structClass).createStruct();
 	}
 
@@ -423,7 +446,7 @@ public class Struct<T> {
 		if(trim == null) trim = false;
 		java.nio.ByteOrder byteOrder = order.getByteOrder();
 		
-		LOGGER.debug("unpacking: {}",Hex.encodeHexString(bytes));
+		LOGGER.debug("unpacking: 0x{}",Hex.encodeHexString(bytes));
 				
 		switch (type) {
 			case ShortUnsigned:
