@@ -1,5 +1,6 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class EntityEverything {
@@ -27,14 +28,16 @@ public class EntityEverything {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 11)
-	public Long myLongUnsigned;
+	@StructToken(order = 11)
+	public BigInteger myLongUnsigned;
+	@StructToken(order = 12,type = TokenType.LongUnsignedToSigned)
+	public Long myLongUnsignedToSigned;
 	
 	public EntityEverything() {}
 	
 
 	public EntityEverything(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
-			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
+			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned,Long myLongUnsignedToSigned) {
 		super();
 		this.myString = myString;
 		this.myShort = myShort;
@@ -47,6 +50,7 @@ public class EntityEverything {
 		this.myShortUnsigned = myShortUnsigned;
 		this.myIntegerUnsigned = myIntegerUnsigned;
 		this.myLongUnsigned = myLongUnsigned;
+		this.myLongUnsignedToSigned = myLongUnsignedToSigned;
 	}
 
 
@@ -152,13 +156,25 @@ public class EntityEverything {
 	}
 
 
-	public Long getMyLongUnsigned() {
+	public BigInteger getMyLongUnsigned() {
 		return myLongUnsigned;
 	}
 
 
-	public void setMyLongUnsigned(Long myLongUnsigned) {
+	public void setMyLongUnsigned(BigInteger myLongUnsigned) {
 		this.myLongUnsigned = myLongUnsigned;
+	}
+
+	
+	
+
+	public Long getMyLongUnsignedToSigned() {
+		return myLongUnsignedToSigned;
+	}
+
+
+	public void setMyLongUnsignedToSigned(Long myLongUnsignedToSigned) {
+		this.myLongUnsignedToSigned = myLongUnsignedToSigned;
 	}
 
 
@@ -174,6 +190,7 @@ public class EntityEverything {
 		result = prime * result + ((myIntegerUnsigned == null) ? 0 : myIntegerUnsigned.hashCode());
 		result = prime * result + ((myLong == null) ? 0 : myLong.hashCode());
 		result = prime * result + ((myLongUnsigned == null) ? 0 : myLongUnsigned.hashCode());
+		result = prime * result + ((myLongUnsignedToSigned == null) ? 0 : myLongUnsignedToSigned.hashCode());
 		result = prime * result + ((myShort == null) ? 0 : myShort.hashCode());
 		result = prime * result + ((myShortUnsigned == null) ? 0 : myShortUnsigned.hashCode());
 		result = prime * result + ((myString == null) ? 0 : myString.hashCode());
@@ -226,6 +243,11 @@ public class EntityEverything {
 				return false;
 		} else if (!myLongUnsigned.equals(other.myLongUnsigned))
 			return false;
+		if (myLongUnsignedToSigned == null) {
+			if (other.myLongUnsignedToSigned != null)
+				return false;
+		} else if (!myLongUnsignedToSigned.equals(other.myLongUnsignedToSigned))
+			return false;
 		if (myShort == null) {
 			if (other.myShort != null)
 				return false;
@@ -250,12 +272,12 @@ public class EntityEverything {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("MyStructEntity [myString=");
+		builder.append("EntityEverything [myString=");
 		builder.append(myString);
-		builder.append(", myShort=");
-		builder.append(myShort);
 		builder.append(", myInteger=");
 		builder.append(myInteger);
+		builder.append(", myShort=");
+		builder.append(myShort);
 		builder.append(", myLong=");
 		builder.append(myLong);
 		builder.append(", myDouble=");
@@ -272,6 +294,8 @@ public class EntityEverything {
 		builder.append(myIntegerUnsigned);
 		builder.append(", myLongUnsigned=");
 		builder.append(myLongUnsigned);
+		builder.append(", myLongUnsignedToSigned=");
+		builder.append(myLongUnsignedToSigned);
 		builder.append("]");
 		return builder.toString();
 	}

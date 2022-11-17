@@ -113,4 +113,23 @@ public class Mapping {
 	public boolean isConstant() {
 		return constantValue != null;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("[property=");
+		builder.append(property);
+		builder.append(", field=");
+		builder.append(field);
+		builder.append(", type=");
+		builder.append(type);
+		builder.append(", tokenType=");
+		builder.append(tokenType);
+		builder.append(", length=");
+		builder.append(length);
+		builder.append("]");
+		return builder.toString();
+	}
+	
+	
 }

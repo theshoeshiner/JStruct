@@ -4,6 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,6 +137,12 @@ public class Struct<T> {
 		return unpackEntity(c,buffer);
 	}
 	
+	public <V> V unpackEntity(Class<V> c, ReadableByteChannel channel) throws IOException {
+		ByteBuffer buffer = ByteBuffer.allocate(byteCount());
+		IOUtils.readFully(channel, buffer);
+		return unpackEntity(c,buffer.array());
+	}
+	
 	public <V> V unpackEntity(Class<V> c, byte[] bytes) {
 				
 		try {
@@ -256,9 +265,12 @@ public class Struct<T> {
 			case IntegerUnsigned:
 				packedBytes = Packer.packRaw_u32b((long) val, byteOrder);
 				break;
-			case Long:
 			case LongUnsigned:
-				packedBytes = Packer.packRaw_64b(((long) val & 0xffffffffffffffffl), byteOrder);
+				//convert BigInteger to primitive signed long
+				val = ((BigInteger)val).longValue();
+			case Long:
+			case LongUnsignedToSigned:
+				packedBytes = Packer.packRaw_64b(((long)val & 0xffffffffffffffffl), byteOrder);
 				break;
 			case Double:
 				packedBytes = Packer.packFloat_64b((double) val, byteOrder);
@@ -317,7 +329,6 @@ public class Struct<T> {
 
 				Token token = format.tokens.get(t);
 			
-				LOGGER.debug("token: {}",t);
 				
 				count: for (int i = 0; i < token.tokenCount(); i++) {
 					
@@ -458,7 +469,10 @@ public class Struct<T> {
 			case Integer:
 				return Packer.unpackRaw_32b(bytes, byteOrder);
 			case LongUnsigned:
-				//no such thing as an unsigned 64 bit in java so we process as signed
+				//no such thing as an unsigned 64 bit primitive java so we return a BigInteger
+				return new BigInteger(Long.toUnsignedString(Packer.unpackRaw_64b(bytes, byteOrder)));
+			case LongUnsignedToSigned:
+				return new BigInteger(Long.toUnsignedString(Packer.unpackRaw_64b(bytes, byteOrder))).longValueExact();
 			case Long:
 				return Packer.unpackRaw_64b(bytes, byteOrder);
 			case Double:

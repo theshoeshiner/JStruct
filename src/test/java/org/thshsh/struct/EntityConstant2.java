@@ -1,5 +1,7 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
+
 public class EntityConstant2 extends EntityEverything  {
 
 	public static final String CONSTANT = "THISISCONSTANTISDIFFERENT";
@@ -12,8 +14,8 @@ public class EntityConstant2 extends EntityEverything  {
 	}
 
 	public EntityConstant2(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
-			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
-		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned);
+			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned, Long myLongUnsignedToSigned) {
+		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned, myLongUnsignedToSigned);
 	}
 
 	@Override

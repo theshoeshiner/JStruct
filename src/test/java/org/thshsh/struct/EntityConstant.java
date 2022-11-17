@@ -1,5 +1,6 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class EntityConstant extends EntityEverything {
@@ -20,8 +21,8 @@ public class EntityConstant extends EntityEverything {
 	}
 
 	public EntityConstant(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
-			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
-		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned);
+			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned,Long myLongUnsignedToSigned) {
+		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned,myLongUnsignedToSigned);
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class EntityCopy {
@@ -24,14 +25,16 @@ public class EntityCopy {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 10)
-	public Long myLongUnsigned;
+	@StructToken(order = 10)
+	public BigInteger myLongUnsigned;
+	@StructToken(order = 12,type = TokenType.LongUnsignedToSigned)
+	public Long myLongUnsignedToSigned;
 	
 	public EntityCopy() {}
 	
 
 	public EntityCopy(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
-			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
+			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned,Long myLongUnsignedToSigned) {
 		super();
 		this.myString = myString;
 		this.myShort = myShort;
@@ -44,6 +47,7 @@ public class EntityCopy {
 		this.myShortUnsigned = myShortUnsigned;
 		this.myIntegerUnsigned = myIntegerUnsigned;
 		this.myLongUnsigned = myLongUnsigned;
+		this.myLongUnsignedToSigned = myLongUnsignedToSigned;
 	}
 
 
@@ -149,12 +153,12 @@ public class EntityCopy {
 	}
 
 
-	public Long getMyLongUnsigned() {
+	public BigInteger getMyLongUnsigned() {
 		return myLongUnsigned;
 	}
 
 
-	public void setMyLongUnsigned(Long myLongUnsigned) {
+	public void setMyLongUnsigned(BigInteger myLongUnsigned) {
 		this.myLongUnsigned = myLongUnsigned;
 	}
 

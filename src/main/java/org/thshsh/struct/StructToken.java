@@ -15,7 +15,8 @@ public @interface StructToken {
 	int offset() default NULL;
 	TokenType type() default TokenType.Auto;
 	int length() default 0;
-	boolean unsigned() default false;
+	boolean unsigned() default false; //tells the API that this is an unsigned value
+	boolean unsignedNarrow() default false; //TODO implement this - tells the api to force the value into a signed primitive rather than upcasting to the next largest type
 	String constant() default "";
 	boolean validate() default true;
 	

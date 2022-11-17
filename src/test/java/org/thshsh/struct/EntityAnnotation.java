@@ -1,5 +1,6 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 @StructEntity(byteOrder = ByteOrder.Big,charset = "UTF-8",trimAndPad = true)
@@ -25,14 +26,14 @@ public class EntityAnnotation {
 	public Integer myShortUnsigned;
 	@StructToken(order = 9,unsigned = true)
 	public Long myIntegerUnsigned;
-	@StructToken(type=TokenType.LongUnsigned, order = 10)
-	public Long myLongUnsigned;
+	@StructToken(order = 10)
+	public BigInteger myLongUnsigned;
 	
 	
 	public EntityAnnotation() {}
 	
 	public EntityAnnotation(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray,
-			Boolean myBoolean, Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned) {
+			Boolean myBoolean, Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned) {
 		super();
 		this.myString = myString;
 		this.myShort = myShort;
@@ -129,11 +130,11 @@ public class EntityAnnotation {
 		this.myIntegerUnsigned = myIntegerUnsigned;
 	}
 
-	public Long getMyLongUnsigned() {
+	public BigInteger getMyLongUnsigned() {
 		return myLongUnsigned;
 	}
 
-	public void setMyLongUnsigned(Long myLongUnsigned) {
+	public void setMyLongUnsigned(BigInteger myLongUnsigned) {
 		this.myLongUnsigned = myLongUnsigned;
 	}
 

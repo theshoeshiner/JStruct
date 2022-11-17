@@ -1,5 +1,7 @@
 package org.thshsh.struct;
 
+import java.math.BigInteger;
+
 public class EntityChild extends EntityEverything {
 	
 	@StructToken(order = 10,length=8)
@@ -10,8 +12,8 @@ public class EntityChild extends EntityEverything {
 	}
 
 	public EntityChild(String myString, Short myShort, Integer myInteger, Long myLong, Double myDouble, byte[] myByteArray, Boolean myBoolean,
-			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, Long myLongUnsigned,String child) {
-		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned);
+			Byte myByte, Integer myShortUnsigned, Long myIntegerUnsigned, BigInteger myLongUnsigned,Long myLongUnsignedToSigned,String child) {
+		super(myString, myShort, myInteger, myLong, myDouble, myByteArray, myBoolean, myByte, myShortUnsigned, myIntegerUnsigned, myLongUnsigned,myLongUnsignedToSigned);
 		this.myChildString = child;
 	}
 

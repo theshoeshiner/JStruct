@@ -1,11 +1,11 @@
 package org.thshsh.struct;
 
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -146,7 +146,8 @@ public class StructTest {
 	
 	@Test
 	public void testEntity() {
-		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
+		
 		testObjectInputAllOrders(mea);
 	}
 	
@@ -159,7 +160,7 @@ public class StructTest {
 	
 	@Test
 	public void testConstant() {
-		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityConstant entity = new EntityConstant("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
 		testObjectInputAllOrders(entity);
 		byte[] packed = Struct.create(EntityConstant.class).packEntity(entity);
 		packed[0] = 'd';
@@ -169,7 +170,7 @@ public class StructTest {
 	
 	@Test
 	public void testConstantValidate() {
-		EntityConstant2 entity = new EntityConstant2("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityConstant2 entity = new EntityConstant2("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
 		Assertions.assertThrows(ConstantMismatchException.class, () -> {
 			byte[] packed = Struct.create(EntityConstant2.class).packEntity(entity);
 			packed[0] = 'd';
@@ -195,7 +196,7 @@ public class StructTest {
 	
 	@Test
 	public void testChildEntity()  {
-		EntityChild entity = new EntityChild("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE,"abcdefgh");
+		EntityChild entity = new EntityChild("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE,"abcdefgh");
 		testObjectInputAllOrders(entity);
 	}
 	
@@ -213,7 +214,7 @@ public class StructTest {
 	
 	@Test
 	public void testGeneric() {
-		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
 		Struct<EntityEverything> s = Struct.create(EntityEverything.class);
 		byte[] bytes =s.packEntity(mea);
 		EntityEverything unpacked = s.unpackEntity(bytes);
@@ -223,7 +224,7 @@ public class StructTest {
 	@Test
 	public void testEntityWrongLength() {
 		Assertions.assertThrows(LengthMismatchException.class, () -> {
-			EntityEverything mea = new EntityEverything("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+			EntityEverything mea = new EntityEverything("abcd",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
 			Struct.create(EntityEverything.class).packEntity(mea);
 		});
 	}
@@ -231,7 +232,7 @@ public class StructTest {
 	@Test
 	public void testDuplicateEntity()  {
 		//make sure we can unpack objects of different types as long as the struct configs are the same
-		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityEverything mea = new EntityEverything("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)),Long.MAX_VALUE);
 		Struct<EntityEverything> s = Struct.create(EntityEverything.class);
 		byte[] bytes = s.packEntity(mea);
 		EntityCopy copy = s.unpackEntity(EntityCopy.class, bytes);
@@ -240,7 +241,7 @@ public class StructTest {
 	
 	@Test
 	public void testEntityWithClassAnnotation()  {
-		EntityAnnotation mea = new EntityAnnotation("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityAnnotation mea = new EntityAnnotation("abc",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)));
 		StructEntity sc = EntityAnnotation.class.getAnnotation(StructEntity.class);
 		Struct<EntityAnnotation> s = Struct.create(EntityAnnotation.class);
 		
@@ -255,7 +256,7 @@ public class StructTest {
 	
 	@Test
 	public void testTrimAndPad() {
-		EntityAnnotation mea = new EntityAnnotation("ab ",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,Long.MIN_VALUE);
+		EntityAnnotation mea = new EntityAnnotation("ab ",(short)12,322,3439l,4.222d,new byte[] {4,3,2,1},true,(byte) 4,Short.MAX_VALUE+1,Integer.MAX_VALUE+1l,new BigInteger(Long.toUnsignedString(-1)));
 		Struct<EntityAnnotation> s = Struct.create(EntityAnnotation.class);
 		byte[] bytes = s.packEntity(mea);
 		EntityAnnotation copy = s.unpackEntity(EntityAnnotation.class, bytes);

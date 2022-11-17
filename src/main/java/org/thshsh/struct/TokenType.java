@@ -1,6 +1,7 @@
 package org.thshsh.struct;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -26,7 +27,9 @@ public enum TokenType {
 	
 	ShortUnsigned(2,false,"H",true,Integer.class,java.lang.Integer::valueOf,null,Objects::equals),
 	IntegerUnsigned(4,false,"I",true,Long.class,java.lang.Long::valueOf,null,Objects::equals),
-	LongUnsigned(8,false,"Q",true,Long.class,null,null,Objects::equals),
+	LongUnsigned(8,false,"Q",true,BigInteger.class,s -> new BigInteger(s),null,Objects::equals),
+	//This token type will fail if an unsigned long value exceeds the limits of a signed long during unpacking
+	LongUnsignedToSigned(8,false,"R",true,Long.class,s -> {return new BigInteger(s).longValueExact();},null,Objects::equals),
 	
 	Double(8,false,"d",Double.class,java.lang.Double::valueOf,null,Objects::equals),
 	Bytes(1,true,"s",byte[].class,s-> {
@@ -64,6 +67,10 @@ public enum TokenType {
 		this.convert = convert;
 		this.lengthFunction = l;
 		this.equalsFunction = equalsFunction;
+	}
+	
+	public int size() {
+		return size;
 	}
 	
 	public Object convert(String value) {

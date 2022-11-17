@@ -33,6 +33,8 @@ public class Token {
 		this.count = count;
 		if (count == 0)
 			throw new MappingException("Count cannot be zero");
+		if (length < 0)
+			throw new MappingException("Length cannot be negative");
 		this.constant = constant;
 		this.validate = val;
 		byteCount = count * length ;//+ prefixBytes + suffixBytes;
