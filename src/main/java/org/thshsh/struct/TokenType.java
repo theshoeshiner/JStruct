@@ -13,9 +13,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * i and l are the same q and Q are treated the same because we cannot represent
- * an unsigned long
- * 
+ * i and l are the s
  *
  */
 public enum TokenType {
@@ -25,9 +23,11 @@ public enum TokenType {
 	Integer(4,false,"il",Integer.class,java.lang.Integer::valueOf,null,Objects::equals),
 	Long(8,false,"q",Long.class,java.lang.Long::valueOf,null,Objects::equals),
 	
+	//unsigned types will upcast the value to a type that can handle it
 	ShortUnsigned(2,false,"H",true,Integer.class,java.lang.Integer::valueOf,null,Objects::equals),
 	IntegerUnsigned(4,false,"I",true,Long.class,java.lang.Long::valueOf,null,Objects::equals),
 	LongUnsigned(8,false,"Q",true,BigInteger.class,s -> new BigInteger(s),null,Objects::equals),
+	
 	//This token type will fail if an unsigned long value exceeds the limits of a signed long during unpacking
 	LongUnsignedToSigned(8,false,"R",true,Long.class,s -> {return new BigInteger(s).longValueExact();},null,Objects::equals),
 	
